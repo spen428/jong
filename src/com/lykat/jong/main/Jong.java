@@ -1,19 +1,7 @@
 package com.lykat.jong.main;
 
-import static com.lykat.jong.main.GraphicsConstants.DISCARD_TILES_Y_OFFSET_MM;
-import static com.lykat.jong.main.GraphicsConstants.HAND_TILES_Y_OFFSET_MM;
-import static com.lykat.jong.main.GraphicsConstants.MODEL_TILE_FLAT;
-import static com.lykat.jong.main.GraphicsConstants.MODEL_TILE_SIDE;
-import static com.lykat.jong.main.GraphicsConstants.MODEL_TILE_STAND;
-import static com.lykat.jong.main.GraphicsConstants.OVERHEAD_CAMERA_Z_OFFSET_MM;
-import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Y_OFFSET_MM;
-import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Z_OFFSET_MM;
-import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_RADIUS_MM;
-import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_THICKNESS_MM;
-import static com.lykat.jong.main.GraphicsConstants.TILE_GAP_MM;
-import static com.lykat.jong.main.GraphicsConstants.TILE_HEIGHT_MM;
-import static com.lykat.jong.main.GraphicsConstants.TILE_THICKNESS_MM;
-import static com.lykat.jong.main.GraphicsConstants.TILE_WIDTH_MM;
+import static com.lykat.jong.main.GraphicsConstants.*;
+import static com.lykat.jong.main.GameConstants.*;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
@@ -107,8 +95,8 @@ public class Jong implements ApplicationListener, InputProcessor {
 			instances.add(i);
 		}
 
-		/* Hand */
-		{
+		/* Hands */
+		for (int p = 0; p < 4; p++) {
 			float totalWidth = (13 * (TILE_WIDTH_MM + TILE_GAP_MM))
 					- TILE_GAP_MM;
 			for (int x = 0; x < 14; x++) {
@@ -118,6 +106,7 @@ public class Jong implements ApplicationListener, InputProcessor {
 				float yPos = PLAYING_SURFACE_RADIUS_MM - HAND_TILES_Y_OFFSET_MM;
 				instance.transform.setTranslation(rel(xPos, yPos, 0,
 						TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
+				rotateAboutCenter(instance, p * 90);
 				instances.add(instance);
 			}
 			/* Tsumo-hai */
@@ -129,21 +118,54 @@ public class Jong implements ApplicationListener, InputProcessor {
 						PLAYING_SURFACE_RADIUS_MM - HAND_TILES_Y_OFFSET_MM,
 						TILE_WIDTH_MM + TILE_GAP_MM, TILE_THICKNESS_MM,
 						TILE_HEIGHT_MM, TILE_WIDTH_MM));
+				rotateAboutCenter(instance, p * 90);
 				instances.add(instance);
+			}
+		}
+
+		/* Riichi Sticks */
+		for (int p = 0; p < 4; p++) {
+			ModelInstance instance = new ModelInstance(MODEL_RIICHI_STICK);
+			instance.transform.setTranslation(rel(PLAYING_SURFACE_RADIUS_MM
+					- (RIICHI_WIDTH_MM / 2.0f), PLAYING_SURFACE_RADIUS_MM
+					- RIICHI_STICK_Y_OFFSET_MM, 0, RIICHI_WIDTH_MM,
+					RIICHI_THICKNESS_MM, RIICHI_HEIGHT_MM));
+			rotateAboutCenter(instance, p * 90);
+			instances.add(instance);
+		}
+
+		/* Walls */
+		for (int p = 0; p < 4; p++) {
+			float totalWidth = (WALL_WIDTH_TILES * (TILE_WIDTH_MM + TILE_GAP_MM))
+					- TILE_GAP_MM;
+			for (int z = 0; z < WALL_HEIGHT_TILES; z++) {
+				for (int x = 0; x < WALL_WIDTH_TILES; x++) {
+					ModelInstance instance = new ModelInstance(MODEL_TILE_FLAT);
+					float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM)
+							+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2;
+					float yPos = PLAYING_SURFACE_RADIUS_MM
+							+ WALL_TILES_Y_OFFSET_MM
+							+ (TILE_HEIGHT_MM + TILE_GAP_MM);
+					instance.transform.setTranslation(rel(xPos, yPos, z
+							* (TILE_THICKNESS_MM + TILE_GAP_MM),
+							TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
+					rotateAboutCenter(instance, p * 90);
+					instances.add(instance);
+				}
 			}
 		}
 
 		/* Discards */
 		for (int p = 0; p < 4; p++) {
-			float totalWidth = (6 * (TILE_WIDTH_MM + TILE_GAP_MM))
+			float totalWidth = (DISCARD_WIDTH_TILES * (TILE_WIDTH_MM + TILE_GAP_MM))
 					- TILE_GAP_MM;
-			for (int i = 0; i < 3; i++) {
-				for (int x = 0; x < 6; x++) {
+			for (int i = 0; i < DISCARD_HEIGHT_TILES; i++) {
+				for (int x = 0; x < DISCARD_WIDTH_TILES; x++) {
 					ModelInstance instance = new ModelInstance(MODEL_TILE_FLAT);
 					float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM)
 							+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2;
 					float yPos = PLAYING_SURFACE_RADIUS_MM
-							- DISCARD_TILES_Y_OFFSET_MM
+							+ DISCARD_TILES_Y_OFFSET_MM
 							+ (i * (TILE_HEIGHT_MM + TILE_GAP_MM));
 					instance.transform.setTranslation(rel(xPos, yPos, 0,
 							TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));

@@ -12,8 +12,8 @@ public final class GraphicsConstants {
 	/* Object Sizes */
 	public static final float TILE_WIDTH_MM = 18.2f;
 	public static final float TILE_HEIGHT_MM = 25.3f;
-	public static final float TILE_THICKNESS_MM = 15.5f * 0.75f;
-	public static final float TILE_GAP_MM = 3f;
+	public static final float TILE_THICKNESS_MM = 15.5f * 0.75f; // thin better?
+	public static final float TILE_GAP_MM = 1f;
 
 	public static final float RIICHI_WIDTH_MM = TILE_WIDTH_MM * 3.5f;
 	public static final float RIICHI_THICKNESS_MM = TILE_THICKNESS_MM * 0.3f;
@@ -31,20 +31,11 @@ public final class GraphicsConstants {
 	public static final float PLAYER_CAMERA_Y_OFFSET_MM = PLAYING_SURFACE_RADIUS_MM * 1.2f;
 	public static final float OVERHEAD_CAMERA_Z_OFFSET_MM = PLAYER_CAMERA_Z_OFFSET_MM * 2.1f;
 
-	/**
-	 * Offset from the centre of table in the Y plane.
-	 */
 	public static final float HAND_TILES_Y_OFFSET_MM = PLAYING_SURFACE_RADIUS_MM * 0.75f;
-
-	/**
-	 * Offset from the centre of table in the Y plane.
-	 */
-	public static final float DISCARD_TILES_Y_OFFSET_MM = -TILE_WIDTH_MM * 4;
-
-	/**
-	 * Offset from the centre of table in the Y plane.
-	 */
-	public static final float RIICHI_STICK_Y_OFFSET_MM = PLAYING_SURFACE_RADIUS_MM * 0.25f;
+	public static final float WALL_TILES_Y_OFFSET_MM = TILE_WIDTH_MM
+			* GameConstants.WALL_WIDTH_TILES * 0.5f;
+	public static final float DISCARD_TILES_Y_OFFSET_MM = TILE_WIDTH_MM * 6 * 0.75f;
+	public static final float RIICHI_STICK_Y_OFFSET_MM = RIICHI_WIDTH_MM * 0.75f;
 
 	/* Static Models */
 	private static final ModelBuilder mb = new ModelBuilder();
@@ -66,6 +57,9 @@ public final class GraphicsConstants {
 
 	public static final Model MODEL_TILE_SIDE = mb.createBox(TILE_HEIGHT_MM,
 			TILE_THICKNESS_MM, TILE_WIDTH_MM, mat, attr);
+
+	public static final Model MODEL_RIICHI_STICK = mb.createBox(
+			RIICHI_WIDTH_MM, RIICHI_THICKNESS_MM, RIICHI_HEIGHT_MM, mat, attr);
 
 	private GraphicsConstants() {
 	}
