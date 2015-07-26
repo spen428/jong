@@ -1,0 +1,269 @@
+package com.lykat.jong.main;
+
+import static com.lykat.jong.main.GraphicsConstants.DISCARD_TILES_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.HAND_TILES_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.MODEL_TILE_FLAT;
+import static com.lykat.jong.main.GraphicsConstants.MODEL_TILE_SIDE;
+import static com.lykat.jong.main.GraphicsConstants.MODEL_TILE_STAND;
+import static com.lykat.jong.main.GraphicsConstants.OVERHEAD_CAMERA_Z_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Z_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_RADIUS_MM;
+import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_THICKNESS_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_GAP_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_HEIGHT_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_THICKNESS_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_WIDTH_MM;
+
+import com.badlogic.gdx.ApplicationListener;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.VertexAttributes.Usage;
+import com.badlogic.gdx.graphics.g3d.Environment;
+import com.badlogic.gdx.graphics.g3d.Material;
+import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.ModelBatch;
+import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
+import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.Array;
+
+public class Jong implements ApplicationListener, InputProcessor {
+
+	private Environment environment;
+	private PerspectiveCamera cam;
+	private ModelBatch modelBatch;
+	private AssetManager assets;
+	private Array<ModelInstance> instances = new Array<ModelInstance>();
+	private boolean loading;
+	private boolean toggle;
+
+	private final String[] models = new String[] {}; // "res/Table/Table.obj" };
+
+	private final Vector3 PLAYER_CAM_POS = new Vector3(0,
+			-PLAYER_CAMERA_Y_OFFSET_MM, PLAYER_CAMERA_Z_OFFSET_MM);
+	private final Vector3 OVERHEAD_CAM_POS = new Vector3(0, 0,
+			OVERHEAD_CAMERA_Z_OFFSET_MM);
+	private final Vector3 CENTER_POS = new Vector3(0, 0, 0);
+
+	@Override
+	public void create() {
+		modelBatch = new ModelBatch();
+		environment = new Environment();
+		environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f,
+				0.4f, 0.4f, 1f));
+		environment.add(new DirectionalLight().set(2.8f, 0.8f, 0.8f, -1f,
+				-0.8f, -0.2f));
+
+		cam = new PerspectiveCamera(67, Gdx.graphics.getWidth(),
+				Gdx.graphics.getHeight());
+		cam.position.set(PLAYER_CAM_POS);
+		cam.lookAt(0, 0, 0);
+		cam.near = 1f;
+		cam.far = 15000f;
+		cam.fieldOfView = 67f;
+		cam.update();
+
+		Gdx.input.setInputProcessor(this);
+
+		assets = new AssetManager();
+		for (String path : models) {
+			assets.load(path, Model.class);
+		}
+		loading = true;
+	}
+
+	/**
+	 * Returns a Vector3 relative to the bottom-left corner of the playing
+	 * surface.
+	 */
+	private Vector3 rel(float x, float y, float z, float width, float height,
+			float thickness) {
+		return new Vector3(x + width / 2 - PLAYING_SURFACE_RADIUS_MM, y
+				+ height / 2 - PLAYING_SURFACE_RADIUS_MM, z + thickness / 2
+				+ PLAYING_SURFACE_THICKNESS_MM);
+	}
+
+	private void rotateAboutCenter(ModelInstance instance, float degrees) {
+		Vector3 pos = new Vector3();
+		instance.transform.getTranslation(pos);
+		instance.transform.setTranslation(CENTER_POS);
+		instance.transform.rotate(new Vector3(0, 0, 1), degrees);
+		instance.transform.translate(pos);
+	}
+
+	private void loadModels() {
+		for (String path : models) {
+			Model m = assets.get(path, Model.class);
+			ModelInstance i = new ModelInstance(m);
+			i.transform.translate(0, 0, 0); // -196.937500f
+			instances.add(i);
+		}
+
+		/* Hand */
+		{
+			float totalWidth = (13 * (TILE_WIDTH_MM + TILE_GAP_MM))
+					- TILE_GAP_MM;
+			for (int x = 0; x < 14; x++) {
+				ModelInstance instance = new ModelInstance(MODEL_TILE_STAND);
+				float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM)
+						+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2;
+				float yPos = PLAYING_SURFACE_RADIUS_MM - HAND_TILES_Y_OFFSET_MM;
+				instance.transform.setTranslation(rel(xPos, yPos, 0,
+						TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
+				instances.add(instance);
+			}
+			/* Tsumo-hai */
+			{
+				ModelInstance instance = new ModelInstance(MODEL_TILE_SIDE);
+				instance.transform.setTranslation(rel(
+						(totalWidth - (0.75f * TILE_WIDTH_MM)
+								+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2),
+						PLAYING_SURFACE_RADIUS_MM - HAND_TILES_Y_OFFSET_MM,
+						TILE_WIDTH_MM + TILE_GAP_MM, TILE_THICKNESS_MM,
+						TILE_HEIGHT_MM, TILE_WIDTH_MM));
+				instances.add(instance);
+			}
+		}
+
+		/* Discards */
+		for (int p = 0; p < 4; p++) {
+			float totalWidth = (6 * (TILE_WIDTH_MM + TILE_GAP_MM))
+					- TILE_GAP_MM;
+			for (int i = 0; i < 3; i++) {
+				for (int x = 0; x < 6; x++) {
+					ModelInstance instance = new ModelInstance(MODEL_TILE_FLAT);
+					float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM)
+							+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2;
+					float yPos = PLAYING_SURFACE_RADIUS_MM
+							- DISCARD_TILES_Y_OFFSET_MM
+							+ (i * (TILE_HEIGHT_MM + TILE_GAP_MM));
+					instance.transform.setTranslation(rel(xPos, yPos, 0,
+							TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
+					rotateAboutCenter(instance, p * 90);
+					instances.add(instance);
+				}
+			}
+		}
+
+		/* Surface */
+		ModelBuilder mb = new ModelBuilder();
+		Model playingSurface = mb.createBox(PLAYING_SURFACE_RADIUS_MM * 2,
+				PLAYING_SURFACE_RADIUS_MM * 2, PLAYING_SURFACE_THICKNESS_MM,
+				new Material(ColorAttribute.createDiffuse(Color.MAROON)),
+				Usage.Position | Usage.Normal);
+		ModelInstance instance = new ModelInstance(playingSurface);
+		instances.add(instance);
+
+		loading = false;
+	}
+
+	@Override
+	public void render() {
+		if (loading && assets.update())
+			loadModels();
+
+		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(),
+				Gdx.graphics.getHeight());
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+
+		modelBatch.begin(cam);
+		modelBatch.render(instances, environment);
+		modelBatch.end();
+
+	}
+
+	private void toggleCamera() {
+		cam.position.set(toggle ? PLAYER_CAM_POS : OVERHEAD_CAM_POS);
+		toggle = !toggle;
+		cam.lookAt(0, 0, 0);
+		cam.update();
+	}
+
+	@Override
+	public void dispose() {
+		modelBatch.dispose();
+		instances.clear();
+		assets.dispose();
+	}
+
+	@Override
+	public void pause() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void resize(int arg0, int arg1) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void resume() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public boolean keyDown(int key) {
+		switch (key) {
+		case Keys.F:
+			toggleCamera();
+			break;
+		default:
+			break;
+		}
+		return false;
+	}
+
+	@Override
+	public boolean keyTyped(char arg0) {
+
+		return false;
+	}
+
+	@Override
+	public boolean keyUp(int arg0) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean mouseMoved(int arg0, int arg1) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean scrolled(int arg0) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean touchDown(int arg0, int arg1, int arg2, int arg3) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean touchDragged(int arg0, int arg1, int arg2) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean touchUp(int arg0, int arg1, int arg2, int arg3) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+}

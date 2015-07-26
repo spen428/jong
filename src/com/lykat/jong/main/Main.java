@@ -1,28 +1,16 @@
 package com.lykat.jong.main;
 
-/**
- * The main class.
- * 
- * @author lykat
- *
- */
-public class Main implements Runnable {
+import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
+import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 
-	Main() {
-		
-	}
-	
-	@Override
-	public void run() {
-		boolean running = true;
-		while(running) {
-			
-		}
-	}
-	
+public class Main {
+
 	public static void main(String[] args) {
-		Main m = new Main();
-		m.run();
+		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
+		config.title = "Jong";
+		config.width = 1280;
+		config.height = 720;
+		new LwjglApplication(new Jong(), config);
 	}
 
 }
