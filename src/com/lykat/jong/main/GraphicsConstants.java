@@ -1,6 +1,8 @@
 package com.lykat.jong.main;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
@@ -41,25 +43,44 @@ public final class GraphicsConstants {
 	private static final ModelBuilder mb = new ModelBuilder();
 	private static final Material mat = new Material(
 			ColorAttribute.createDiffuse(Color.WHITE));
-	private static final int attr = Usage.Position | Usage.Normal;
+	private static final int attr = Usage.Position | Usage.Normal
+			| Usage.TextureCoordinates;
 
-	public static final Model MODEL_TILE_FLAT = mb.createBox(TILE_WIDTH_MM,
+	public static final Model MODEL_TILE_OLD = mb.createBox(TILE_WIDTH_MM,
 			TILE_HEIGHT_MM, TILE_THICKNESS_MM, mat, attr);
-
-	public static final Model MODEL_TILE_FLAT_90 = mb.createBox(TILE_HEIGHT_MM,
-			TILE_WIDTH_MM, TILE_THICKNESS_MM, mat, attr);
-
-	public static final Model MODEL_TILE_STAND = mb.createBox(TILE_WIDTH_MM,
-			TILE_THICKNESS_MM, TILE_HEIGHT_MM, mat, attr);
-
-	public static final Model MODEL_TILE_STAND_90 = mb.createBox(
-			TILE_THICKNESS_MM, TILE_WIDTH_MM, TILE_HEIGHT_MM, mat, attr);
-
-	public static final Model MODEL_TILE_SIDE = mb.createBox(TILE_HEIGHT_MM,
-			TILE_THICKNESS_MM, TILE_WIDTH_MM, mat, attr);
 
 	public static final Model MODEL_RIICHI_STICK = mb.createBox(
 			RIICHI_WIDTH_MM, RIICHI_THICKNESS_MM, RIICHI_HEIGHT_MM, mat, attr);
+
+	public static final Model MODEL_TILE = buildTile();
+
+	private static Model buildTile() {
+		int attr = VertexAttributes.Usage.Position
+				| VertexAttributes.Usage.Normal
+				| VertexAttributes.Usage.TextureCoordinates;
+		float halfTileWidth = TILE_WIDTH_MM / 2;
+		float halfTileHeight = TILE_HEIGHT_MM / 2;
+		float halfTileThick = TILE_THICKNESS_MM / 2;
+		float faceThick = halfTileThick * 0.01f;
+		float frontThick = TILE_THICKNESS_MM * 0.75f;
+		float backThick = TILE_THICKNESS_MM * 0.25f;
+		mb.begin();
+		mb.part("back", GL20.GL_TRIANGLES, attr,
+				new Material(ColorAttribute.createDiffuse(Color.BLUE))).box(
+				halfTileHeight, halfTileWidth,
+				(faceThick / 2) + frontThick + (backThick / 2),
+				halfTileHeight * 2, halfTileWidth * 2, backThick);
+		mb.part("front", GL20.GL_TRIANGLES, attr,
+				new Material(ColorAttribute.createDiffuse(Color.WHITE))).box(
+				halfTileHeight, halfTileWidth,
+				(faceThick / 2) + (frontThick / 2), halfTileHeight * 2,
+				halfTileWidth * 2, frontThick);
+		mb.part("face", GL20.GL_TRIANGLES, attr,
+				new Material(ColorAttribute.createDiffuse(Color.WHITE))).box(
+				halfTileHeight, halfTileWidth, 0, halfTileHeight * 2,
+				halfTileWidth * 2, faceThick);
+		return mb.end();
+	}
 
 	private GraphicsConstants() {
 	}
