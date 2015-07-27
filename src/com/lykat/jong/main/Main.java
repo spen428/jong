@@ -2,7 +2,6 @@ package com.lykat.jong.main;
 
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
-import com.lykat.jong.test.SceneTest;
 
 public class Main {
 
@@ -11,7 +10,7 @@ public class Main {
 		config.title = "Jong";
 		config.width = 1280;
 		config.height = 720;
-		new LwjglApplication(new SceneTest(), config);
+		new LwjglApplication(new Jong(), config);
 	}
 
 }
