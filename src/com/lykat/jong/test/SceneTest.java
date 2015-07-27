@@ -30,6 +30,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
+import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
@@ -352,6 +354,14 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 	public boolean touchUp(int arg0, int arg1, int arg2, int arg3) {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	public static void main(String[] args) {
+		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
+		config.title = "Jong Scene Test";
+		config.width = 1280;
+		config.height = 720;
+		new LwjglApplication(new SceneTest(), config);
 	}
 
 }
