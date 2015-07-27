@@ -140,7 +140,8 @@ public class Jong implements ApplicationListener, InputProcessor {
 			instances.add(i);
 		}
 
-		Texture tex = new Texture(Gdx.files.internal("res/test.png"));
+		Texture tex8sou = new Texture(Gdx.files.internal("res/test.png"));
+		Texture texChun = new Texture(Gdx.files.internal("res/test2.png"));
 
 		/* Hands */
 		for (int p = 0; p < 4; p++) {
@@ -157,7 +158,7 @@ public class Jong implements ApplicationListener, InputProcessor {
 				/* Rotate towards player from face-down position */
 				instance.transform.rotate(0, 0, -1, 90);
 				instance.transform.rotate(0, -1, 0, 90);
-				setTileFace(instance, tex);
+				setTileFace(instance, tex8sou);
 				instances.add(instance);
 			}
 			/* Tsumo-hai */
@@ -172,7 +173,7 @@ public class Jong implements ApplicationListener, InputProcessor {
 				rotateAboutCenter(instance, p * 90);
 				/* Rotate towards player from face-down position */
 				instance.transform.rotate(-1, 0, 0, 90);
-				setTileFace(instance, tex);
+				setTileFace(instance, tex8sou);
 				instances.add(instance);
 			}
 		}
@@ -228,7 +229,7 @@ public class Jong implements ApplicationListener, InputProcessor {
 					/* Rotate face-up from face-down position */
 					instance.transform.rotate(1, 0, 0, 180);
 					instance.transform.rotate(0, 0, 1, 90); // Rotate clockwise
-					// setTileFace(instance, tex);
+					setTileFace(instance, texChun);
 					instances.add(instance);
 				}
 			}
@@ -238,7 +239,7 @@ public class Jong implements ApplicationListener, InputProcessor {
 		ModelBuilder mb = new ModelBuilder();
 		Model playingSurface = mb.createBox(PLAYING_SURFACE_RADIUS_MM * 2,
 				PLAYING_SURFACE_RADIUS_MM * 2, PLAYING_SURFACE_THICKNESS_MM,
-				new Material(ColorAttribute.createDiffuse(Color.MAROON)),
+				new Material(ColorAttribute.createDiffuse(Color.NAVY)),
 				Usage.Position | Usage.Normal);
 		ModelInstance instance = new ModelInstance(playingSurface);
 		instances.add(instance);

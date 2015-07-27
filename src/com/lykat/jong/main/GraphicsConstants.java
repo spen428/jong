@@ -15,7 +15,7 @@ public final class GraphicsConstants {
 	public static final float TILE_WIDTH_MM = 18.2f;
 	public static final float TILE_HEIGHT_MM = 25.3f;
 	public static final float TILE_THICKNESS_MM = 15.5f * 0.75f; // thin better?
-	public static final float TILE_GAP_MM = 1f;
+	public static final float TILE_GAP_MM = 0.1f;
 
 	public static final float RIICHI_WIDTH_MM = TILE_WIDTH_MM * 3.5f;
 	public static final float RIICHI_THICKNESS_MM = TILE_THICKNESS_MM * 0.3f;
@@ -69,7 +69,7 @@ public final class GraphicsConstants {
 		float backThick = TILE_THICKNESS_MM * 0.25f;
 		mb.begin();
 		mb.part("back", GL20.GL_TRIANGLES, attr,
-				new Material(ColorAttribute.createDiffuse(Color.BLUE))).box(
+				new Material(ColorAttribute.createDiffuse(Color.ORANGE))).box(
 				halfTileHeight, halfTileWidth,
 				(faceThick / 2) + frontThick + (backThick / 2),
 				halfTileHeight * 2, halfTileWidth * 2, backThick);
