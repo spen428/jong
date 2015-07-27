@@ -1,7 +1,29 @@
 package com.lykat.jong.main;
 
-import static com.lykat.jong.main.GraphicsConstants.*;
-import static com.lykat.jong.main.GameConstants.*;
+import static com.lykat.jong.main.GameConstants.DISCARD_HEIGHT_TILES;
+import static com.lykat.jong.main.GameConstants.DISCARD_WIDTH_TILES;
+import static com.lykat.jong.main.GameConstants.WALL_HEIGHT_TILES;
+import static com.lykat.jong.main.GameConstants.WALL_WIDTH_TILES;
+import static com.lykat.jong.main.GraphicsConstants.DISCARD_TILES_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.HAND_TILES_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.MODEL_RIICHI_STICK;
+import static com.lykat.jong.main.GraphicsConstants.MODEL_TILE;
+import static com.lykat.jong.main.GraphicsConstants.OVERHEAD_CAMERA_Z_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Z_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_RADIUS_MM;
+import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_THICKNESS_MM;
+import static com.lykat.jong.main.GraphicsConstants.RIICHI_HEIGHT_MM;
+import static com.lykat.jong.main.GraphicsConstants.RIICHI_STICK_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.RIICHI_THICKNESS_MM;
+import static com.lykat.jong.main.GraphicsConstants.RIICHI_WIDTH_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_GAP_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_HEIGHT_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_THICKNESS_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_WIDTH_MM;
+import static com.lykat.jong.main.GraphicsConstants.WALL_TILES_Y_OFFSET_MM;
+
+import java.util.Iterator;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
@@ -11,6 +33,7 @@ import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.Material;
@@ -18,7 +41,9 @@ import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
+import com.badlogic.gdx.graphics.g3d.model.MeshPart;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
@@ -56,7 +81,6 @@ public class Jong implements ApplicationListener, InputProcessor {
 		cam.lookAt(0, 0, 0);
 		cam.near = 1f;
 		cam.far = 15000f;
-		cam.fieldOfView = 67f;
 		cam.update();
 
 		Gdx.input.setInputProcessor(this);
@@ -87,6 +111,27 @@ public class Jong implements ApplicationListener, InputProcessor {
 		instance.transform.translate(pos);
 	}
 
+	private boolean setTileFace(ModelInstance tileInstance, Texture faceTexture) {
+		TextureAttribute textureAttr = new TextureAttribute(
+				TextureAttribute.Diffuse, faceTexture);
+		/* Find the index of the "face" mesh part. */
+		Iterator<MeshPart> it = tileInstance.model.meshParts.iterator();
+		int idx = 0;
+		boolean found = false;
+		while (it.hasNext()) {
+			if (it.next().id.equals("face")) {
+				found = true;
+				break;
+			}
+			idx++;
+		}
+		if (found) {
+			tileInstance.materials.get(idx).set(textureAttr);
+			return true;
+		}
+		return false;
+	}
+
 	private void loadModels() {
 		for (String path : models) {
 			Model m = assets.get(path, Model.class);
@@ -95,30 +140,39 @@ public class Jong implements ApplicationListener, InputProcessor {
 			instances.add(i);
 		}
 
+		Texture tex = new Texture(Gdx.files.internal("res/test.png"));
+
 		/* Hands */
 		for (int p = 0; p < 4; p++) {
 			float totalWidth = (13 * (TILE_WIDTH_MM + TILE_GAP_MM))
 					- TILE_GAP_MM;
 			for (int x = 0; x < 14; x++) {
-				ModelInstance instance = new ModelInstance(MODEL_TILE_STAND);
+				ModelInstance instance = new ModelInstance(MODEL_TILE);
 				float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM)
 						+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2;
 				float yPos = PLAYING_SURFACE_RADIUS_MM - HAND_TILES_Y_OFFSET_MM;
 				instance.transform.setTranslation(rel(xPos, yPos, 0,
 						TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
 				rotateAboutCenter(instance, p * 90);
+				/* Rotate towards player from face-down position */
+				instance.transform.rotate(0, 0, -1, 90);
+				instance.transform.rotate(0, -1, 0, 90);
+				setTileFace(instance, tex);
 				instances.add(instance);
 			}
 			/* Tsumo-hai */
 			{
-				ModelInstance instance = new ModelInstance(MODEL_TILE_SIDE);
+				ModelInstance instance = new ModelInstance(MODEL_TILE);
 				instance.transform.setTranslation(rel(
 						(totalWidth - (0.75f * TILE_WIDTH_MM)
 								+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2),
 						PLAYING_SURFACE_RADIUS_MM - HAND_TILES_Y_OFFSET_MM,
-						TILE_WIDTH_MM + TILE_GAP_MM, TILE_THICKNESS_MM,
-						TILE_HEIGHT_MM, TILE_WIDTH_MM));
+						TILE_HEIGHT_MM + TILE_WIDTH_MM + TILE_GAP_MM,
+						TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
 				rotateAboutCenter(instance, p * 90);
+				/* Rotate towards player from face-down position */
+				instance.transform.rotate(-1, 0, 0, 90);
+				setTileFace(instance, tex);
 				instances.add(instance);
 			}
 		}
@@ -140,7 +194,7 @@ public class Jong implements ApplicationListener, InputProcessor {
 					- TILE_GAP_MM;
 			for (int z = 0; z < WALL_HEIGHT_TILES; z++) {
 				for (int x = 0; x < WALL_WIDTH_TILES; x++) {
-					ModelInstance instance = new ModelInstance(MODEL_TILE_FLAT);
+					ModelInstance instance = new ModelInstance(MODEL_TILE);
 					float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM)
 							+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2;
 					float yPos = PLAYING_SURFACE_RADIUS_MM
@@ -150,6 +204,7 @@ public class Jong implements ApplicationListener, InputProcessor {
 							* (TILE_THICKNESS_MM + TILE_GAP_MM),
 							TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
 					rotateAboutCenter(instance, p * 90);
+					instance.transform.rotate(0, 0, 1, 90); // Rotate clockwise
 					instances.add(instance);
 				}
 			}
@@ -161,7 +216,7 @@ public class Jong implements ApplicationListener, InputProcessor {
 					- TILE_GAP_MM;
 			for (int i = 0; i < DISCARD_HEIGHT_TILES; i++) {
 				for (int x = 0; x < DISCARD_WIDTH_TILES; x++) {
-					ModelInstance instance = new ModelInstance(MODEL_TILE_FLAT);
+					ModelInstance instance = new ModelInstance(MODEL_TILE);
 					float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM)
 							+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2;
 					float yPos = PLAYING_SURFACE_RADIUS_MM
@@ -170,6 +225,10 @@ public class Jong implements ApplicationListener, InputProcessor {
 					instance.transform.setTranslation(rel(xPos, yPos, 0,
 							TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
 					rotateAboutCenter(instance, p * 90);
+					/* Rotate face-up from face-down position */
+					instance.transform.rotate(1, 0, 0, 180);
+					instance.transform.rotate(0, 0, 1, 90); // Rotate clockwise
+					// setTileFace(instance, tex);
 					instances.add(instance);
 				}
 			}

@@ -52,6 +52,9 @@ public final class GraphicsConstants {
 	public static final Model MODEL_RIICHI_STICK = mb.createBox(
 			RIICHI_WIDTH_MM, RIICHI_THICKNESS_MM, RIICHI_HEIGHT_MM, mat, attr);
 
+	/**
+	 * Model of a Mahjong Tile, orientated face-down.
+	 */
 	public static final Model MODEL_TILE = buildTile();
 
 	private static Model buildTile() {
