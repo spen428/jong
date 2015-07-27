@@ -1,4 +1,4 @@
-package com.lykat.jong.main;
+package com.lykat.jong.test;
 
 import static com.lykat.jong.main.GameConstants.DISCARD_HEIGHT_TILES;
 import static com.lykat.jong.main.GameConstants.DISCARD_WIDTH_TILES;
@@ -48,7 +48,13 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 
-public class Jong implements ApplicationListener, InputProcessor {
+/**
+ * A test scene displaying the table and tiles.
+ * 
+ * @author lykat
+ *
+ */
+public class SceneTest implements ApplicationListener, InputProcessor {
 
 	private Environment environment;
 	private PerspectiveCamera cam;
