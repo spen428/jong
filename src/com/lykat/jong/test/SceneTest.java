@@ -46,7 +46,9 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.model.MeshPart;
+import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 
@@ -68,11 +70,18 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 
 	private final String[] models = new String[] {}; // "res/Table/Table.obj" };
 
+	private CameraInputController camCont;
+
 	private final Vector3 PLAYER_CAM_POS = new Vector3(0,
 			-PLAYER_CAMERA_Y_OFFSET_MM, PLAYER_CAMERA_Z_OFFSET_MM);
 	private final Vector3 OVERHEAD_CAM_POS = new Vector3(0, 0,
 			OVERHEAD_CAMERA_Z_OFFSET_MM);
 	private final Vector3 CENTER_POS = new Vector3(0, 0, 0);
+
+	private final Vector3 up = new Vector3(0, 0, 1);
+	private final Vector3 right = new Vector3(1, 0, 0);
+	private final Vector3 out = new Vector3(0, 1, 0);
+	private final Vector3 in = new Vector3(0, -1, 0);
 
 	@Override
 	public void create() {
@@ -90,6 +99,8 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		cam.near = 1f;
 		cam.far = 15000f;
 		cam.update();
+
+		camCont = new CameraInputController(cam);
 
 		Gdx.input.setInputProcessor(this);
 
@@ -141,6 +152,18 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 	}
 
 	private void loadModels() {
+		/* Playing Surface */
+		{
+			ModelBuilder mb = new ModelBuilder();
+			Model playingSurface = mb.createBox(PLAYING_SURFACE_RADIUS_MM * 2,
+					PLAYING_SURFACE_RADIUS_MM * 2,
+					PLAYING_SURFACE_THICKNESS_MM,
+					new Material(ColorAttribute.createDiffuse(Color.NAVY)),
+					Usage.Position | Usage.Normal);
+			ModelInstance instance = new ModelInstance(playingSurface);
+			instances.add(instance);
+		}
+
 		for (String path : models) {
 			Model m = assets.get(path, Model.class);
 			ModelInstance i = new ModelInstance(m);
@@ -157,26 +180,30 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 					- TILE_GAP_MM;
 			for (int x = 0; x < 14; x++) {
 				ModelInstance instance = new ModelInstance(MODEL_TILE);
-				float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM)
-						+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2;
-				float yPos = PLAYING_SURFACE_RADIUS_MM - HAND_TILES_Y_OFFSET_MM;
-				instance.transform.setTranslation(rel(xPos, yPos, 0,
-						TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
-				rotateAboutCenter(instance, p * 90);
-				/* Rotate towards player from face-down position */
+
+				/* Move into position */
+				float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM) - totalWidth / 2;
+				float yPos = -HAND_TILES_Y_OFFSET_MM;
+				float zPos = 0;
+
+				instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
+						out, up);
 				instance.transform.rotate(0, 0, -1, 90);
-				instance.transform.rotate(0, -1, 0, 90);
-				setTileFace(instance, tex8sou);
+
+				// rotateAboutCenter(instance, p * 90);
+
+				/* Texture */
+				setTileFace(instance, texChun);
 				instances.add(instance);
 			}
 			/* Tsumo-hai */
 			{
 				ModelInstance instance = new ModelInstance(MODEL_TILE);
-				instance.transform.setTranslation(rel(
-						(totalWidth - (0.75f * TILE_WIDTH_MM)
-								+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2),
-						PLAYING_SURFACE_RADIUS_MM - HAND_TILES_Y_OFFSET_MM,
-						TILE_HEIGHT_MM + TILE_WIDTH_MM + TILE_GAP_MM,
+				float xPos = (totalWidth - (0.75f * TILE_WIDTH_MM)
+						+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2);
+				float yPos = PLAYING_SURFACE_RADIUS_MM - HAND_TILES_Y_OFFSET_MM;
+				float zPos = TILE_HEIGHT_MM + TILE_WIDTH_MM + TILE_GAP_MM;
+				instance.transform.setTranslation(rel(xPos, yPos, zPos,
 						TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
 				rotateAboutCenter(instance, p * 90);
 				/* Rotate towards player from face-down position */
@@ -194,6 +221,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 					- RIICHI_STICK_Y_OFFSET_MM, 0, RIICHI_WIDTH_MM,
 					RIICHI_THICKNESS_MM, RIICHI_HEIGHT_MM));
 			rotateAboutCenter(instance, p * 90);
+			instance.transform.translate(new Vector3(100, 0, 0));
 			instances.add(instance);
 		}
 
@@ -237,20 +265,12 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 					/* Rotate face-up from face-down position */
 					instance.transform.rotate(1, 0, 0, 180);
 					instance.transform.rotate(0, 0, 1, 90); // Rotate clockwise
+
 					setTileFace(instance, texChun);
 					instances.add(instance);
 				}
 			}
 		}
-
-		/* Surface */
-		ModelBuilder mb = new ModelBuilder();
-		Model playingSurface = mb.createBox(PLAYING_SURFACE_RADIUS_MM * 2,
-				PLAYING_SURFACE_RADIUS_MM * 2, PLAYING_SURFACE_THICKNESS_MM,
-				new Material(ColorAttribute.createDiffuse(Color.NAVY)),
-				Usage.Position | Usage.Normal);
-		ModelInstance instance = new ModelInstance(playingSurface);
-		instances.add(instance);
 
 		loading = false;
 	}
@@ -259,6 +279,8 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 	public void render() {
 		if (loading && assets.update())
 			loadModels();
+
+		camCont.update();
 
 		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(),
 				Gdx.graphics.getHeight());
@@ -327,33 +349,28 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 	}
 
 	@Override
-	public boolean mouseMoved(int arg0, int arg1) {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean mouseMoved(int screenX, int screenY) {
+		return camCont.mouseMoved(screenX, screenY);
 	}
 
 	@Override
-	public boolean scrolled(int arg0) {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean scrolled(int amount) {
+		return camCont.scrolled(amount);
 	}
 
 	@Override
-	public boolean touchDown(int arg0, int arg1, int arg2, int arg3) {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean touchDown(int x, int y, int pointer, int button) {
+		return camCont.touchDown(0, y, pointer, button);
 	}
 
 	@Override
-	public boolean touchDragged(int arg0, int arg1, int arg2) {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean touchDragged(int screenX, int screenY, int pointer) {
+		return camCont.touchDragged(0, screenY, pointer);
 	}
 
 	@Override
-	public boolean touchUp(int arg0, int arg1, int arg2, int arg3) {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean touchUp(int x, int y, int pointer, int button) {
+		return camCont.touchUp(0, y, pointer, button);
 	}
 
 	public static void main(String[] args) {
