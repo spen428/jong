@@ -74,10 +74,10 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 
 		cam = new PerspectiveCamera(67, Gdx.graphics.getWidth(),
 				Gdx.graphics.getHeight());
-		cam.position.set(PLAYER_CAM_POS);
-		cam.lookAt(0, 0, 0);
 		cam.near = 1f;
 		cam.far = 15000f;
+		cam.position.set(PLAYER_CAM_POS);
+		cam.lookAt(0, 0, 0);
 		cam.update();
 
 		camCont = new CameraInputController(cam);
@@ -336,6 +336,14 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		}
 	}
 
+	private void resetCamera() {
+		overheadView = false;
+		cam.position.set(PLAYER_CAM_POS);
+		cam.up.set(up);
+		cam.lookAt(0, 0, 0);
+		cam.update();
+	}
+
 	@Override
 	public boolean keyDown(int key) {
 		switch (key) {
@@ -347,6 +355,9 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 			break;
 		case Keys.A:
 			cyclePlayerCams(false);
+			break;
+		case Keys.R:
+			resetCamera();
 			break;
 		default:
 			break;
