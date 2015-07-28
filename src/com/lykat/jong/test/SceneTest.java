@@ -4,6 +4,7 @@ import static com.lykat.jong.main.GameConstants.*;
 import static com.lykat.jong.main.GraphicsConstants.*;
 
 import java.util.Iterator;
+import java.util.Random;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
@@ -31,6 +32,7 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
+import com.lykat.jong.main.TextureLoader;
 
 /**
  * A test scene displaying the table and tiles.
@@ -48,6 +50,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 	private boolean loading;
 	private boolean overheadView;
 	private Vector3 prevCamPos = new Vector3();
+	private final Random random = new Random();
 
 	private final String[] models = new String[] {}; // "res/Table/Table.obj" };
 
@@ -100,6 +103,11 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		matrix.translate(pos);
 	}
 
+	private boolean randomTileFace(ModelInstance tileInstance) {
+		Texture texture = TextureLoader.getTextureById(random.nextInt(34));
+		return setTileFace(tileInstance, texture);
+	}
+
 	private boolean setTileFace(ModelInstance tileInstance, Texture faceTexture) {
 		TextureAttribute textureAttr = new TextureAttribute(
 				TextureAttribute.Diffuse, faceTexture);
@@ -121,7 +129,11 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		return false;
 	}
 
-	private void loadModels() {
+	private void loadGraphics() {
+		System.out.println("Loading textures...");
+		TextureLoader.load();
+
+		System.out.println("Loading models...");
 		/* Playing Surface */
 		{
 			ModelBuilder mb = new ModelBuilder();
@@ -140,9 +152,6 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 			i.transform.translate(0, 0, 0); // -196.937500f
 			instances.add(i);
 		}
-
-		Texture tex8sou = new Texture(Gdx.files.internal("res/test.png"));
-		Texture texChun = new Texture(Gdx.files.internal("res/test2.png"));
 
 		int numPlayers = 4;
 		int numHandTiles = 13;
@@ -169,7 +178,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 				instance.transform.rotate(0, -1, 0, 90).rotate(-1, 0, 0, 90);
 
 				instances.add(instance);
-				setTileFace(instance, tex8sou);
+				randomTileFace(instance);
 			}
 			/* Tsumo-hai */
 			{
@@ -197,7 +206,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 				}
 
 				instances.add(instance);
-				setTileFace(instance, texChun);
+				randomTileFace(instance);
 			}
 			numHandTiles -= 4;
 		}
@@ -262,7 +271,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 							.rotate(0, 0, -1, 90);
 
 					instances.add(instance);
-					setTileFace(instance, texChun);
+					randomTileFace(instance);
 				}
 			}
 		}
@@ -273,7 +282,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 	@Override
 	public void render() {
 		if (loading && assets.update())
-			loadModels();
+			loadGraphics();
 
 		camCont.update();
 
