@@ -33,11 +33,12 @@ public final class GraphicsConstants {
 	public static final float PLAYER_CAMERA_Y_OFFSET_MM = PLAYING_SURFACE_RADIUS_MM * 1.2f;
 	public static final float OVERHEAD_CAMERA_Z_OFFSET_MM = PLAYER_CAMERA_Z_OFFSET_MM * 2.1f;
 
-	public static final float HAND_TILES_Y_OFFSET_MM = PLAYING_SURFACE_RADIUS_MM * 0.75f;
 	public static final float WALL_TILES_Y_OFFSET_MM = TILE_WIDTH_MM
-			* GameConstants.WALL_WIDTH_TILES * 0.5f;
-	public static final float DISCARD_TILES_Y_OFFSET_MM = TILE_WIDTH_MM * 6 * 0.75f;
-	public static final float RIICHI_STICK_Y_OFFSET_MM = RIICHI_WIDTH_MM * 0.75f;
+			* GameConstants.WALL_WIDTH_TILES * 0.60f;
+	public static final float HAND_TILES_Y_OFFSET_MM = (PLAYING_SURFACE_RADIUS_MM - WALL_TILES_Y_OFFSET_MM) * 1.70f;
+	public static final float DISCARD_TILES_Y_OFFSET_MM = TILE_WIDTH_MM
+			* GameConstants.DISCARD_WIDTH_TILES * 0.80f;
+	public static final float RIICHI_STICK_Y_OFFSET_MM = RIICHI_WIDTH_MM * 0.65f;
 
 	/* Static Models */
 	private static final ModelBuilder mb = new ModelBuilder();

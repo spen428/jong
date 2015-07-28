@@ -1,27 +1,7 @@
 package com.lykat.jong.test;
 
-import static com.lykat.jong.main.GameConstants.DISCARD_HEIGHT_TILES;
-import static com.lykat.jong.main.GameConstants.DISCARD_WIDTH_TILES;
-import static com.lykat.jong.main.GameConstants.WALL_HEIGHT_TILES;
-import static com.lykat.jong.main.GameConstants.WALL_WIDTH_TILES;
-import static com.lykat.jong.main.GraphicsConstants.DISCARD_TILES_Y_OFFSET_MM;
-import static com.lykat.jong.main.GraphicsConstants.HAND_TILES_Y_OFFSET_MM;
-import static com.lykat.jong.main.GraphicsConstants.MODEL_RIICHI_STICK;
-import static com.lykat.jong.main.GraphicsConstants.MODEL_TILE;
-import static com.lykat.jong.main.GraphicsConstants.OVERHEAD_CAMERA_Z_OFFSET_MM;
-import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Y_OFFSET_MM;
-import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Z_OFFSET_MM;
-import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_RADIUS_MM;
-import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_THICKNESS_MM;
-import static com.lykat.jong.main.GraphicsConstants.RIICHI_HEIGHT_MM;
-import static com.lykat.jong.main.GraphicsConstants.RIICHI_STICK_Y_OFFSET_MM;
-import static com.lykat.jong.main.GraphicsConstants.RIICHI_THICKNESS_MM;
-import static com.lykat.jong.main.GraphicsConstants.RIICHI_WIDTH_MM;
-import static com.lykat.jong.main.GraphicsConstants.TILE_GAP_MM;
-import static com.lykat.jong.main.GraphicsConstants.TILE_HEIGHT_MM;
-import static com.lykat.jong.main.GraphicsConstants.TILE_THICKNESS_MM;
-import static com.lykat.jong.main.GraphicsConstants.TILE_WIDTH_MM;
-import static com.lykat.jong.main.GraphicsConstants.WALL_TILES_Y_OFFSET_MM;
+import static com.lykat.jong.main.GameConstants.*;
+import static com.lykat.jong.main.GraphicsConstants.*;
 
 import java.util.Iterator;
 
@@ -48,7 +28,6 @@ import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.model.MeshPart;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
-import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 
@@ -79,9 +58,8 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 	private final Vector3 CENTER_POS = new Vector3(0, 0, 0);
 
 	private final Vector3 up = new Vector3(0, 0, 1);
-	private final Vector3 right = new Vector3(1, 0, 0);
-	private final Vector3 out = new Vector3(0, 1, 0);
-	private final Vector3 in = new Vector3(0, -1, 0);
+	// private final Vector3 right = new Vector3(1, 0, 0);
+	private final Vector3 forward = new Vector3(0, 1, 0);
 
 	@Override
 	public void create() {
@@ -111,22 +89,12 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		loading = true;
 	}
 
-	/**
-	 * Returns a Vector3 relative to the bottom-left corner of the playing
-	 * surface.
-	 */
-	private Vector3 rel(float x, float y, float z, float width, float height,
-			float thickness) {
-		return new Vector3(x + width / 2 - PLAYING_SURFACE_RADIUS_MM, y
-				+ height / 2 - PLAYING_SURFACE_RADIUS_MM, z + thickness / 2
-				+ PLAYING_SURFACE_THICKNESS_MM);
-	}
-
 	private void rotateAboutCenter(ModelInstance instance, float degrees) {
 		Vector3 pos = new Vector3();
 		instance.transform.getTranslation(pos);
-		instance.transform.setTranslation(CENTER_POS);
+		instance.transform.setToTranslation(CENTER_POS);
 		instance.transform.rotate(new Vector3(0, 0, 1), degrees);
+		pos = pos.sub(CENTER_POS);
 		instance.transform.translate(pos);
 	}
 
@@ -174,100 +142,125 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		Texture tex8sou = new Texture(Gdx.files.internal("res/test.png"));
 		Texture texChun = new Texture(Gdx.files.internal("res/test2.png"));
 
+		int numPlayers = 4;
+		int numHandTiles = 13;
+		float tileWG = TILE_WIDTH_MM + TILE_GAP_MM;
+		float tileHG = TILE_HEIGHT_MM + TILE_GAP_MM;
+		float tileTG = TILE_THICKNESS_MM + TILE_GAP_MM;
+
 		/* Hands */
-		for (int p = 0; p < 4; p++) {
-			float totalWidth = (13 * (TILE_WIDTH_MM + TILE_GAP_MM))
-					- TILE_GAP_MM;
-			for (int x = 0; x < 14; x++) {
+		for (int p = 0; p < numPlayers; p++) {
+			/* Changes per player so has to be inside loop */
+			float halfWidth = ((numHandTiles * (tileWG)) - TILE_GAP_MM) / 2;
+			for (int x = 0; x < numHandTiles; x++) {
 				ModelInstance instance = new ModelInstance(MODEL_TILE);
 
 				/* Move into position */
-				float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM) - totalWidth / 2;
+				float xPos = x * (tileWG) - halfWidth;
 				float yPos = -HAND_TILES_Y_OFFSET_MM;
 				float zPos = 0;
-
 				instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
-						out, up);
-				instance.transform.rotate(0, 0, -1, 90);
+						forward, up);
 
-				// rotateAboutCenter(instance, p * 90);
+				/* Rotate so it ends up in front of #p, then rotate to face */
+				rotateAboutCenter(instance, p * 90);
+				instance.transform.rotate(0, -1, 0, 90).rotate(-1, 0, 0, 90);
 
-				/* Texture */
-				setTileFace(instance, texChun);
 				instances.add(instance);
+				setTileFace(instance, tex8sou);
 			}
 			/* Tsumo-hai */
 			{
 				ModelInstance instance = new ModelInstance(MODEL_TILE);
-				float xPos = (totalWidth - (0.75f * TILE_WIDTH_MM)
-						+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2);
-				float yPos = PLAYING_SURFACE_RADIUS_MM - HAND_TILES_Y_OFFSET_MM;
-				float zPos = TILE_HEIGHT_MM + TILE_WIDTH_MM + TILE_GAP_MM;
-				instance.transform.setTranslation(rel(xPos, yPos, zPos,
-						TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
+
+				/* Move into position */
+				float xPos = (numHandTiles + 0.5f) * (tileWG) - halfWidth;
+				float yPos = -HAND_TILES_Y_OFFSET_MM;
+				float zPos = 0;
+				boolean placeOntop = numHandTiles >= MIN_TILES_TSUMOHAI_ONTOP;
+
+				if (placeOntop) { // Place ontop of hand
+					xPos -= tileWG;
+					zPos += tileHG;
+				}
+
+				instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
+						forward, up);
+
+				/* Rotate into place */
 				rotateAboutCenter(instance, p * 90);
-				/* Rotate towards player from face-down position */
-				instance.transform.rotate(-1, 0, 0, 90);
-				setTileFace(instance, tex8sou);
+				instance.transform.rotate(0, -1, 0, 90).rotate(-1, 0, 0, 90);
+				if (placeOntop) {
+					instance.transform.rotate(0, 0, -1, 90);
+				}
+
 				instances.add(instance);
+				setTileFace(instance, texChun);
 			}
+			numHandTiles -= 4;
 		}
 
 		/* Riichi Sticks */
-		for (int p = 0; p < 4; p++) {
+		for (int p = 0; p < numPlayers; p++) {
 			ModelInstance instance = new ModelInstance(MODEL_RIICHI_STICK);
-			instance.transform.setTranslation(rel(PLAYING_SURFACE_RADIUS_MM
-					- (RIICHI_WIDTH_MM / 2.0f), PLAYING_SURFACE_RADIUS_MM
-					- RIICHI_STICK_Y_OFFSET_MM, 0, RIICHI_WIDTH_MM,
-					RIICHI_THICKNESS_MM, RIICHI_HEIGHT_MM));
+
+			/* Move into position */
+			float xPos = 0;
+			float yPos = -RIICHI_STICK_Y_OFFSET_MM;
+			float zPos = RIICHI_HEIGHT_MM;
+			instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
+					forward, up);
+
+			/* Rotate into place */
 			rotateAboutCenter(instance, p * 90);
-			instance.transform.translate(new Vector3(100, 0, 0));
+
 			instances.add(instance);
 		}
 
 		/* Walls */
-		for (int p = 0; p < 4; p++) {
-			float totalWidth = (WALL_WIDTH_TILES * (TILE_WIDTH_MM + TILE_GAP_MM))
-					- TILE_GAP_MM;
+		float halfWidth = ((WALL_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
+		for (int p = 0; p < numPlayers; p++) {
 			for (int z = 0; z < WALL_HEIGHT_TILES; z++) {
 				for (int x = 0; x < WALL_WIDTH_TILES; x++) {
 					ModelInstance instance = new ModelInstance(MODEL_TILE);
-					float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM)
-							+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2;
-					float yPos = PLAYING_SURFACE_RADIUS_MM
-							+ WALL_TILES_Y_OFFSET_MM
-							+ (TILE_HEIGHT_MM + TILE_GAP_MM);
-					instance.transform.setTranslation(rel(xPos, yPos, z
-							* (TILE_THICKNESS_MM + TILE_GAP_MM),
-							TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
+
+					/* Move into position */
+					float xPos = ((x + 1) * tileWG) - halfWidth;
+					float yPos = -WALL_TILES_Y_OFFSET_MM;
+					float zPos = z * tileTG;
+					instance.transform.setToWorld(
+							new Vector3(xPos, yPos, zPos), forward, up);
+
+					/* Rotate into place */
 					rotateAboutCenter(instance, p * 90);
-					instance.transform.rotate(0, 0, 1, 90); // Rotate clockwise
+					instance.transform.rotate(0, 0, 1, 90);
+
 					instances.add(instance);
 				}
 			}
 		}
 
 		/* Discards */
-		for (int p = 0; p < 4; p++) {
-			float totalWidth = (DISCARD_WIDTH_TILES * (TILE_WIDTH_MM + TILE_GAP_MM))
-					- TILE_GAP_MM;
+		halfWidth = ((DISCARD_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
+		for (int p = 0; p < numPlayers; p++) {
 			for (int i = 0; i < DISCARD_HEIGHT_TILES; i++) {
 				for (int x = 0; x < DISCARD_WIDTH_TILES; x++) {
 					ModelInstance instance = new ModelInstance(MODEL_TILE);
-					float xPos = x * (TILE_WIDTH_MM + TILE_GAP_MM)
-							+ PLAYING_SURFACE_RADIUS_MM - totalWidth / 2;
-					float yPos = PLAYING_SURFACE_RADIUS_MM
-							+ DISCARD_TILES_Y_OFFSET_MM
-							+ (i * (TILE_HEIGHT_MM + TILE_GAP_MM));
-					instance.transform.setTranslation(rel(xPos, yPos, 0,
-							TILE_THICKNESS_MM, TILE_HEIGHT_MM, TILE_WIDTH_MM));
-					rotateAboutCenter(instance, p * 90);
-					/* Rotate face-up from face-down position */
-					instance.transform.rotate(1, 0, 0, 180);
-					instance.transform.rotate(0, 0, 1, 90); // Rotate clockwise
 
-					setTileFace(instance, texChun);
+					/* Move into position */
+					float xPos = (x * tileWG) - halfWidth;
+					float yPos = -DISCARD_TILES_Y_OFFSET_MM - (i * tileHG);
+					float zPos = TILE_THICKNESS_MM;
+					instance.transform.setToWorld(
+							new Vector3(xPos, yPos, zPos), forward, up);
+
+					/* Rotate into place */
+					rotateAboutCenter(instance, p * 90);
+					instance.transform.rotate(1, 0, 0, 180)
+							.rotate(0, 0, -1, 90);
+
 					instances.add(instance);
+					setTileFace(instance, texChun);
 				}
 			}
 		}
@@ -355,7 +348,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 
 	@Override
 	public boolean scrolled(int amount) {
-		return camCont.scrolled(amount);
+		return camCont.scrolled(amount * 25);
 	}
 
 	@Override
