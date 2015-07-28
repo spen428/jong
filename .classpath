@@ -5,7 +5,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="lib" path="/media/lykat/Data/Documents/Programming/_libraries/libgdx/gdx-natives.jar"/>
 	<classpathentry kind="lib" path="/media/lykat/Data/Documents/Programming/_libraries/libgdx/gdx-backend-lwjgl-natives.jar"/>
-	<classpathentry kind="lib" path="/media/lykat/Data/Documents/Programming/_libraries/libgdx/gdx-backend-lwjgl.jar"/>
-	<classpathentry kind="lib" path="/media/lykat/Data/Documents/Programming/_libraries/libgdx/gdx.jar"/>
+	<classpathentry kind="lib" path="/media/lykat/Data/Documents/Programming/_libraries/libgdx/gdx-backend-lwjgl.jar" sourcepath="/lib/my/libgdx/sources/gdx-backend-lwjgl-sources.jar"/>
+	<classpathentry kind="lib" path="/media/lykat/Data/Documents/Programming/_libraries/libgdx/gdx.jar" sourcepath="/lib/my/libgdx/sources/gdx-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
