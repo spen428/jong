@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 
 public final class TextureLoader {
 
@@ -27,6 +28,7 @@ public final class TextureLoader {
 		}
 		for (String path : paths) {
 			Texture texture = new Texture(Gdx.files.internal(path));
+			texture.setFilter(TextureFilter.Linear, TextureFilter.Linear);
 			textures.add(texture);
 		}
 	}

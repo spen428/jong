@@ -6,6 +6,8 @@ import static com.lykat.jong.main.GraphicsConstants.*;
 import java.util.Iterator;
 import java.util.Random;
 
+import org.lwjgl.opengl.GL11;
+
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
@@ -416,6 +418,10 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		config.title = "Jong Scene Test";
 		config.width = 1280;
 		config.height = 720;
+		config.samples = 8;
+		config.useGL30 = true;
+		config.vSyncEnabled = true;
+		config.fullscreen = false;
 		new LwjglApplication(new SceneTest(), config);
 	}
 
