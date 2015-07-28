@@ -28,6 +28,7 @@ import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.model.MeshPart;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 
@@ -45,7 +46,8 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 	private AssetManager assets;
 	private Array<ModelInstance> instances = new Array<ModelInstance>();
 	private boolean loading;
-	private boolean toggle;
+	private boolean overheadView;
+	private Vector3 prevCamPos = new Vector3();
 
 	private final String[] models = new String[] {}; // "res/Table/Table.obj" };
 
@@ -89,13 +91,13 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		loading = true;
 	}
 
-	private void rotateAboutCenter(ModelInstance instance, float degrees) {
+	private void rotateAboutCenter(Matrix4 matrix, float degrees) {
 		Vector3 pos = new Vector3();
-		instance.transform.getTranslation(pos);
-		instance.transform.setToTranslation(CENTER_POS);
-		instance.transform.rotate(new Vector3(0, 0, 1), degrees);
+		matrix.getTranslation(pos);
+		matrix.setToTranslation(CENTER_POS);
+		matrix.rotate(new Vector3(0, 0, 1), degrees);
 		pos = pos.sub(CENTER_POS);
-		instance.transform.translate(pos);
+		matrix.translate(pos);
 	}
 
 	private boolean setTileFace(ModelInstance tileInstance, Texture faceTexture) {
@@ -163,7 +165,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 						forward, up);
 
 				/* Rotate so it ends up in front of #p, then rotate to face */
-				rotateAboutCenter(instance, p * 90);
+				rotateAboutCenter(instance.transform, p * 90);
 				instance.transform.rotate(0, -1, 0, 90).rotate(-1, 0, 0, 90);
 
 				instances.add(instance);
@@ -188,7 +190,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 						forward, up);
 
 				/* Rotate into place */
-				rotateAboutCenter(instance, p * 90);
+				rotateAboutCenter(instance.transform, p * 90);
 				instance.transform.rotate(0, -1, 0, 90).rotate(-1, 0, 0, 90);
 				if (placeOntop) {
 					instance.transform.rotate(0, 0, -1, 90);
@@ -212,7 +214,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 					forward, up);
 
 			/* Rotate into place */
-			rotateAboutCenter(instance, p * 90);
+			rotateAboutCenter(instance.transform, p * 90);
 
 			instances.add(instance);
 		}
@@ -232,7 +234,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 							new Vector3(xPos, yPos, zPos), forward, up);
 
 					/* Rotate into place */
-					rotateAboutCenter(instance, p * 90);
+					rotateAboutCenter(instance.transform, p * 90);
 					instance.transform.rotate(0, 0, 1, 90);
 
 					instances.add(instance);
@@ -255,7 +257,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 							new Vector3(xPos, yPos, zPos), forward, up);
 
 					/* Rotate into place */
-					rotateAboutCenter(instance, p * 90);
+					rotateAboutCenter(instance.transform, p * 90);
 					instance.transform.rotate(1, 0, 0, 180)
 							.rotate(0, 0, -1, 90);
 
@@ -285,13 +287,6 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 
 	}
 
-	private void toggleCamera() {
-		cam.position.set(toggle ? PLAYER_CAM_POS : OVERHEAD_CAM_POS);
-		toggle = !toggle;
-		cam.lookAt(0, 0, 0);
-		cam.update();
-	}
-
 	@Override
 	public void dispose() {
 		modelBatch.dispose();
@@ -317,11 +312,41 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 
 	}
 
+	private void toggleCamera() {
+		if (!overheadView) {
+			prevCamPos.set(cam.position);
+		}
+		cam.position.set(overheadView ? prevCamPos : OVERHEAD_CAM_POS);
+		overheadView = !overheadView;
+		cam.lookAt(0, 0, 0);
+		cam.update();
+	}
+
+	private void cyclePlayerCams(boolean right) {
+		boolean didOverhead = false;
+		if (overheadView) {
+			toggleCamera();
+			didOverhead = true;
+		}
+		cam.rotateAround(CENTER_POS, up, right ? 90 : -90);
+		cam.lookAt(0, 0, 0);
+		cam.update();
+		if (didOverhead) {
+			toggleCamera();
+		}
+	}
+
 	@Override
 	public boolean keyDown(int key) {
 		switch (key) {
 		case Keys.F:
 			toggleCamera();
+			break;
+		case Keys.D:
+			cyclePlayerCams(true);
+			break;
+		case Keys.A:
+			cyclePlayerCams(false);
 			break;
 		default:
 			break;
