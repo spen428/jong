@@ -1,12 +1,14 @@
-package com.lykat.jong.test;
+package com.lykat.jong.test.main;
 
-import static com.lykat.jong.main.GameConstants.*;
+import static com.lykat.jong.main.GameConstants.DISCARD_HEIGHT_TILES;
+import static com.lykat.jong.main.GameConstants.DISCARD_WIDTH_TILES;
+import static com.lykat.jong.main.GameConstants.MIN_TILES_TSUMOHAI_ONTOP;
+import static com.lykat.jong.main.GameConstants.WALL_HEIGHT_TILES;
+import static com.lykat.jong.main.GameConstants.WALL_WIDTH_TILES;
 import static com.lykat.jong.main.GraphicsConstants.*;
 
 import java.util.Iterator;
 import java.util.Random;
-
-import org.lwjgl.opengl.GL11;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
@@ -151,7 +153,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		for (String path : models) {
 			Model m = assets.get(path, Model.class);
 			ModelInstance i = new ModelInstance(m);
-			i.transform.translate(0, 0, 0); // -196.937500f
+			i.transform.translate(0, 0, 0);
 			instances.add(i);
 		}
 
@@ -211,6 +213,27 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 				randomTileFace(instance);
 			}
 			numHandTiles -= 4;
+			/* Open melds */
+			for (int y = 0; y < 4; y++) {
+				for (int x = 0; x < 4; x++) {
+					ModelInstance instance = new ModelInstance(MODEL_TILE);
+
+					/* Move into position */
+					float xPos = OPEN_MELDS_X_OFFSET_MM - (x * tileWG);
+					float yPos = -OPEN_MELDS_Y_OFFSET_MM + (y * tileHG);
+					float zPos = TILE_THICKNESS_MM;
+					instance.transform.setToWorld(
+							new Vector3(xPos, yPos, zPos), forward, up);
+
+					/* Rotate into place */
+					rotateAboutCenter(instance.transform, p * 90);
+					instance.transform.rotate(1, 0, 0, 180)
+							.rotate(0, 0, -1, 90);
+
+					instances.add(instance);
+					randomTileFace(instance);
+				}
+			}
 		}
 
 		/* Riichi Sticks */
@@ -295,7 +318,6 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		modelBatch.begin(cam);
 		modelBatch.render(instances, environment);
 		modelBatch.end();
-
 	}
 
 	@Override
@@ -307,20 +329,14 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 
 	@Override
 	public void pause() {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void resize(int arg0, int arg1) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void resume() {
-		// TODO Auto-generated method stub
-
 	}
 
 	private void toggleCamera() {
@@ -377,14 +393,12 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 	}
 
 	@Override
-	public boolean keyTyped(char arg0) {
-
+	public boolean keyTyped(char key) {
 		return false;
 	}
 
 	@Override
-	public boolean keyUp(int arg0) {
-		// TODO Auto-generated method stub
+	public boolean keyUp(int key) {
 		return false;
 	}
 

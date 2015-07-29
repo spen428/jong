@@ -1,4 +1,4 @@
-package com.lykat.jong.test;
+package com.lykat.jong.test.main;
 
 import java.util.Iterator;
 
