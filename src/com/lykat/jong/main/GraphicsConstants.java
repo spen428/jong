@@ -39,6 +39,8 @@ public final class GraphicsConstants {
 	public static final float DISCARD_TILES_Y_OFFSET_MM = TILE_WIDTH_MM
 			* GameConstants.DISCARD_WIDTH_TILES * 0.80f;
 	public static final float RIICHI_STICK_Y_OFFSET_MM = RIICHI_WIDTH_MM * 0.65f;
+	public static final float OPEN_MELDS_Y_OFFSET_MM = HAND_TILES_Y_OFFSET_MM;
+	public static final float OPEN_MELDS_X_OFFSET_MM = PLAYING_SURFACE_RADIUS_MM * 0.65f;
 
 	/* Static Models */
 	private static final ModelBuilder mb = new ModelBuilder();
