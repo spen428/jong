@@ -12,6 +12,7 @@ import org.junit.runners.Suite.SuiteClasses;
  *
  */
 @RunWith(Suite.class)
-@SuiteClasses({ TileSuitTest.class, TileTest.class, TileValueTest.class })
+@SuiteClasses({ TileSuitTest.class, TileTest.class, TileValueTest.class,
+		WallTest.class })
 public class AllGameTests {
 }
