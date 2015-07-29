@@ -18,13 +18,28 @@ public class Tile {
 	 * @param suit
 	 *            The tile's {@link TileSuit}
 	 * @param value
-	 *            The tile's {@link TileValue}
+	 *            the tile's {@link TileValue}
+	 * @param red
+	 *            Whether this tile is a 'red' dora tile.
 	 */
-	public Tile(TileSuit suit, TileValue value) {
+	public Tile(TileSuit suit, TileValue value, boolean red) {
 		super();
+
+		if (suit == null) {
+			throw new IllegalArgumentException("Tile suit cannot be null.");
+		} else if (value == null) {
+			throw new IllegalArgumentException("Tile value cannot be null.");
+		} else if (suit.isJihai() && value.isNumbered()) {
+			throw new IllegalArgumentException(
+					"Illegal suit/value combo: JIHAI + NUMBERED");
+		} else if (!suit.isJihai() && value.isJihai()) {
+			throw new IllegalArgumentException(
+					"Illegal suit/value combo: NUMBERED + JIHAI");
+		}
+
 		this.suit = suit;
 		this.value = value;
-		this.red = false;
+		this.red = red;
 	}
 
 	/**
@@ -33,15 +48,10 @@ public class Tile {
 	 * @param suit
 	 *            The tile's {@link TileSuit}
 	 * @param value
-	 *            the tile's {@link TileValue}
-	 * @param red
-	 *            Whether this tile is a 'red' dora tile.
+	 *            The tile's {@link TileValue}
 	 */
-	public Tile(TileSuit suit, TileValue value, boolean red) {
-		super();
-		this.suit = suit;
-		this.value = value;
-		this.red = red;
+	public Tile(TileSuit suit, TileValue value) {
+		this(suit, value, false);
 	}
 
 	@Override

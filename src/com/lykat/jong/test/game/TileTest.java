@@ -24,6 +24,41 @@ public class TileTest {
 	}
 
 	@Test
+	public void testContructor() {
+		/* Null suit/value test */
+		boolean nullArgumentException = false;
+		try {
+			new Tile(null, null);
+		} catch (IllegalArgumentException e) {
+			nullArgumentException = true;
+		}
+		assertTrue(nullArgumentException);
+
+		/* Illegal value for JIHAI */
+		boolean illegalArgumentException1 = false;
+		try {
+			new Tile(TileSuit.JIHAI, TileValue.II);
+		} catch (IllegalArgumentException e) {
+			illegalArgumentException1 = true;
+		}
+		assertTrue(illegalArgumentException1);
+
+		/* Illegal value for suit */
+		boolean illegalArgumentException2 = false;
+		try {
+			new Tile(TileSuit.PINZU, TileValue.HATSU);
+		} catch (IllegalArgumentException e) {
+			illegalArgumentException2 = true;
+		}
+		assertTrue(illegalArgumentException2);
+
+		/* Normal construction test */
+		Tile t = new Tile(TileSuit.WANZU, TileValue.CHUU);
+		assertEquals(TileSuit.WANZU, t.getSuit());
+		assertEquals(TileValue.CHUU, t.getValue());
+	}
+
+	@Test
 	public void testHashCode() {
 		assertTrue(hatsu1.hashCode() == hatsu2.hashCode());
 		assertFalse(man9.hashCode() == hatsu1.hashCode());
