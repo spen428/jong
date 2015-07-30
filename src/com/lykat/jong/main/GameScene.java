@@ -1,22 +1,31 @@
-package com.lykat.jong.test.main;
+package com.lykat.jong.main;
 
 import static com.lykat.jong.main.GameConstants.DISCARD_HEIGHT_TILES;
 import static com.lykat.jong.main.GameConstants.DISCARD_WIDTH_TILES;
 import static com.lykat.jong.main.GameConstants.MIN_TILES_TSUMOHAI_ONTOP;
 import static com.lykat.jong.main.GameConstants.WALL_HEIGHT_TILES;
 import static com.lykat.jong.main.GameConstants.WALL_WIDTH_TILES;
-import static com.lykat.jong.main.GraphicsConstants.*;
+import static com.lykat.jong.main.GraphicsConstants.DISCARD_TILES_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.HAND_TILES_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.MODEL_RIICHI_STICK;
+import static com.lykat.jong.main.GraphicsConstants.MODEL_TILE;
+import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Z_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_RADIUS_MM;
+import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_THICKNESS_MM;
+import static com.lykat.jong.main.GraphicsConstants.RIICHI_HEIGHT_MM;
+import static com.lykat.jong.main.GraphicsConstants.RIICHI_STICK_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_GAP_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_HEIGHT_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_THICKNESS_MM;
+import static com.lykat.jong.main.GraphicsConstants.TILE_WIDTH_MM;
+import static com.lykat.jong.main.GraphicsConstants.WALL_TILES_Y_OFFSET_MM;
 
 import java.util.Iterator;
-import java.util.Random;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input.Keys;
-import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
-import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
@@ -31,44 +40,39 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.model.MeshPart;
-import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
-import com.lykat.jong.main.TextureLoader;
+import com.lykat.jong.game.Game;
+import com.lykat.jong.game.Player;
+import com.lykat.jong.game.Tile;
 
 /**
- * A test scene displaying the table and tiles.
+ * Renders the table and tiles based on an instance of {@link Game}.
  * 
  * @author lykat
  *
  */
-public class SceneTest implements ApplicationListener, InputProcessor {
+public class GameScene implements ApplicationListener {
 
-	private Environment environment;
-	private PerspectiveCamera cam;
-	private ModelBatch modelBatch;
-	private AssetManager assets;
-	private Array<ModelInstance> instances = new Array<ModelInstance>();
+	protected Game game, setGame;
+	protected Environment environment;
+	protected PerspectiveCamera cam;
+	protected ModelBatch modelBatch;
+	protected AssetManager assets;
+	protected Array<ModelInstance> instances = new Array<ModelInstance>();
+
 	private boolean loading;
-	private boolean overheadView;
-	private Vector3 prevCamPos = new Vector3();
-	private final Random random = new Random();
 
-	private final String[] models = new String[] {}; // "res/Table/Table.obj" };
+	protected final String[] MODELS = new String[] {};
 
-	private CameraInputController camCont;
-
-	private final Vector3 PLAYER_CAM_POS = new Vector3(0,
+	protected final Vector3 PLAYER_CAM_POS = new Vector3(0,
 			-PLAYER_CAMERA_Y_OFFSET_MM, PLAYER_CAMERA_Z_OFFSET_MM);
-	private final Vector3 OVERHEAD_CAM_POS = new Vector3(0, 0,
-			OVERHEAD_CAMERA_Z_OFFSET_MM);
-	private final Vector3 CENTER_POS = new Vector3(0, 0, 0);
-
-	private final Vector3 up = new Vector3(0, 0, 1);
-	// private final Vector3 right = new Vector3(1, 0, 0);
-	private final Vector3 forward = new Vector3(0, 1, 0);
+	protected final Vector3 CENTER_POS = new Vector3(0, 0, 0);
+	protected final Vector3 UP = new Vector3(0, 0, 1);
+	protected final Vector3 RIGHT = new Vector3(1, 0, 0);
+	protected final Vector3 FORWARD = new Vector3(0, 1, 0);
 
 	@Override
 	public void create() {
@@ -87,12 +91,8 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		cam.lookAt(0, 0, 0);
 		cam.update();
 
-		camCont = new CameraInputController(cam);
-
-		Gdx.input.setInputProcessor(this);
-
 		assets = new AssetManager();
-		for (String path : models) {
+		for (String path : MODELS) {
 			assets.load(path, Model.class);
 		}
 		loading = true;
@@ -105,11 +105,6 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 		matrix.rotate(new Vector3(0, 0, 1), degrees);
 		pos = pos.sub(CENTER_POS);
 		matrix.translate(pos);
-	}
-
-	private boolean randomTileFace(ModelInstance tileInstance) {
-		Texture texture = TextureLoader.getTextureById(random.nextInt(34));
-		return setTileFace(tileInstance, texture);
 	}
 
 	private boolean setTileFace(ModelInstance tileInstance, Texture faceTexture) {
@@ -134,10 +129,6 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 	}
 
 	private void loadGraphics() {
-		System.out.println("Loading textures...");
-		TextureLoader.load();
-
-		System.out.println("Loading models...");
 		/* Playing Surface */
 		{
 			ModelBuilder mb = new ModelBuilder();
@@ -150,24 +141,27 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 			instances.add(instance);
 		}
 
-		for (String path : models) {
+		for (String path : MODELS) {
 			Model m = assets.get(path, Model.class);
 			ModelInstance i = new ModelInstance(m);
 			i.transform.translate(0, 0, 0);
 			instances.add(i);
 		}
 
-		int numPlayers = 4;
-		int numHandTiles = 13;
 		float tileWG = TILE_WIDTH_MM + TILE_GAP_MM;
 		float tileHG = TILE_HEIGHT_MM + TILE_GAP_MM;
 		float tileTG = TILE_THICKNESS_MM + TILE_GAP_MM;
 
+		Player[] players = game.getPlayers();
+
 		/* Hands */
-		for (int p = 0; p < numPlayers; p++) {
-			/* Changes per player so has to be inside loop */
+		for (int p = 0; p < players.length; p++) {
+			Player player = players[p];
+			int numHandTiles = player.getHand().size();
 			float halfWidth = ((numHandTiles * (tileWG)) - TILE_GAP_MM) / 2;
+
 			for (int x = 0; x < numHandTiles; x++) {
+				Tile tile = player.getHand().get(x);
 				ModelInstance instance = new ModelInstance(MODEL_TILE);
 
 				/* Move into position */
@@ -175,17 +169,18 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 				float yPos = -HAND_TILES_Y_OFFSET_MM;
 				float zPos = 0;
 				instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
-						forward, up);
+						FORWARD, UP);
 
 				/* Rotate so it ends up in front of #p, then rotate to face */
 				rotateAboutCenter(instance.transform, p * 90);
 				instance.transform.rotate(0, -1, 0, 90).rotate(-1, 0, 0, 90);
 
 				instances.add(instance);
-				randomTileFace(instance);
+				setTileFace(instance, TextureLoader.getTileTexture(tile));
 			}
+
 			/* Tsumo-hai */
-			{
+			if (player.getTsumoHai() != null) {
 				ModelInstance instance = new ModelInstance(MODEL_TILE);
 
 				/* Move into position */
@@ -200,7 +195,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 				}
 
 				instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
-						forward, up);
+						FORWARD, UP);
 
 				/* Rotate into place */
 				rotateAboutCenter(instance.transform, p * 90);
@@ -210,20 +205,68 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 				}
 
 				instances.add(instance);
-				randomTileFace(instance);
+				setTileFace(instance,
+						TextureLoader.getTileTexture(player.getTsumoHai()));
 			}
-			numHandTiles -= 4;
+
 			/* Open melds */
-			for (int y = 0; y < 4; y++) {
-				for (int x = 0; x < 4; x++) {
+			// for (int y = 0; y < 4; y++) {
+			// for (int x = 0; x < 4; x++) {
+			// ModelInstance instance = new ModelInstance(MODEL_TILE);
+			//
+			// /* Move into position */
+			// float xPos = OPEN_MELDS_X_OFFSET_MM - (x * tileWG);
+			// float yPos = -OPEN_MELDS_Y_OFFSET_MM + (y * tileHG);
+			// float zPos = TILE_THICKNESS_MM;
+			// instance.transform.setToWorld(
+			// new Vector3(xPos, yPos, zPos), FORWARD, UP);
+			//
+			// /* Rotate into place */
+			// rotateAboutCenter(instance.transform, p * 90);
+			// instance.transform.rotate(1, 0, 0, 180)
+			// .rotate(0, 0, -1, 90);
+			//
+			// instances.add(instance);
+			// randomTileFace(instance);
+			// }
+			// }
+
+			/* Riichi Sticks */
+			if (player.isRiichi()) {
+				ModelInstance instance = new ModelInstance(MODEL_RIICHI_STICK);
+
+				/* Move into position */
+				float xPos = 0;
+				float yPos = -RIICHI_STICK_Y_OFFSET_MM;
+				float zPos = RIICHI_HEIGHT_MM;
+				instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
+						FORWARD, UP);
+
+				/* Rotate into place */
+				rotateAboutCenter(instance.transform, p * 90);
+
+				instances.add(instance);
+			}
+
+			/* Discards */
+			if (player.getDiscards().size() > 0) {
+				halfWidth = ((DISCARD_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
+				for (int i = 0; i < player.getDiscards().size(); i++) {
 					ModelInstance instance = new ModelInstance(MODEL_TILE);
 
 					/* Move into position */
-					float xPos = OPEN_MELDS_X_OFFSET_MM - (x * tileWG);
-					float yPos = -OPEN_MELDS_Y_OFFSET_MM + (y * tileHG);
+					int x = i % DISCARD_WIDTH_TILES;
+					int y = i / DISCARD_WIDTH_TILES;
+					if (y > DISCARD_HEIGHT_TILES - 1) {
+						y = DISCARD_HEIGHT_TILES - 1;
+						x += DISCARD_WIDTH_TILES;
+					}
+
+					float xPos = (x * tileWG) - halfWidth;
+					float yPos = -DISCARD_TILES_Y_OFFSET_MM - (y * tileHG);
 					float zPos = TILE_THICKNESS_MM;
 					instance.transform.setToWorld(
-							new Vector3(xPos, yPos, zPos), forward, up);
+							new Vector3(xPos, yPos, zPos), FORWARD, UP);
 
 					/* Rotate into place */
 					rotateAboutCenter(instance.transform, p * 90);
@@ -231,31 +274,16 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 							.rotate(0, 0, -1, 90);
 
 					instances.add(instance);
-					randomTileFace(instance);
+					setTileFace(instance, TextureLoader.getTileTexture(player
+							.getDiscards().get(i)));
 				}
 			}
 		}
 
-		/* Riichi Sticks */
-		for (int p = 0; p < numPlayers; p++) {
-			ModelInstance instance = new ModelInstance(MODEL_RIICHI_STICK);
-
-			/* Move into position */
-			float xPos = 0;
-			float yPos = -RIICHI_STICK_Y_OFFSET_MM;
-			float zPos = RIICHI_HEIGHT_MM;
-			instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
-					forward, up);
-
-			/* Rotate into place */
-			rotateAboutCenter(instance.transform, p * 90);
-
-			instances.add(instance);
-		}
-
 		/* Walls */
+		// TODO
 		float halfWidth = ((WALL_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
-		for (int p = 0; p < numPlayers; p++) {
+		for (int p = 0; p < players.length; p++) {
 			for (int z = 0; z < WALL_HEIGHT_TILES; z++) {
 				for (int x = 0; x < WALL_WIDTH_TILES; x++) {
 					ModelInstance instance = new ModelInstance(MODEL_TILE);
@@ -265,7 +293,7 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 					float yPos = -WALL_TILES_Y_OFFSET_MM;
 					float zPos = z * tileTG;
 					instance.transform.setToWorld(
-							new Vector3(xPos, yPos, zPos), forward, up);
+							new Vector3(xPos, yPos, zPos), FORWARD, UP);
 
 					/* Rotate into place */
 					rotateAboutCenter(instance.transform, p * 90);
@@ -276,48 +304,29 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 			}
 		}
 
-		/* Discards */
-		halfWidth = ((DISCARD_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
-		for (int p = 0; p < numPlayers; p++) {
-			for (int i = 0; i < DISCARD_HEIGHT_TILES; i++) {
-				for (int x = 0; x < DISCARD_WIDTH_TILES; x++) {
-					ModelInstance instance = new ModelInstance(MODEL_TILE);
-
-					/* Move into position */
-					float xPos = (x * tileWG) - halfWidth;
-					float yPos = -DISCARD_TILES_Y_OFFSET_MM - (i * tileHG);
-					float zPos = TILE_THICKNESS_MM;
-					instance.transform.setToWorld(
-							new Vector3(xPos, yPos, zPos), forward, up);
-
-					/* Rotate into place */
-					rotateAboutCenter(instance.transform, p * 90);
-					instance.transform.rotate(1, 0, 0, 180)
-							.rotate(0, 0, -1, 90);
-
-					instances.add(instance);
-					randomTileFace(instance);
-				}
-			}
-		}
-
 		loading = false;
 	}
 
 	@Override
 	public void render() {
-		if (loading && assets.update())
-			loadGraphics();
+		if (setGame != null) {
+			game = setGame;
+			setGame = null;
+		}
 
-		camCont.update();
+		if (game != null) {
+			if (loading && assets.update()) {
+				loadGraphics();
+			}
 
-		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(),
-				Gdx.graphics.getHeight());
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+			Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(),
+					Gdx.graphics.getHeight());
+			Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
-		modelBatch.begin(cam);
-		modelBatch.render(instances, environment);
-		modelBatch.end();
+			modelBatch.begin(cam);
+			modelBatch.render(instances, environment);
+			modelBatch.end();
+		}
 	}
 
 	@Override
@@ -339,104 +348,12 @@ public class SceneTest implements ApplicationListener, InputProcessor {
 	public void resume() {
 	}
 
-	private void toggleCamera() {
-		if (!overheadView) {
-			prevCamPos.set(cam.position);
-		}
-		cam.position.set(overheadView ? prevCamPos : OVERHEAD_CAM_POS);
-		overheadView = !overheadView;
-		cam.lookAt(0, 0, 0);
-		cam.update();
-	}
-
-	private void cyclePlayerCams(boolean right) {
-		boolean didOverhead = false;
-		if (overheadView) {
-			toggleCamera();
-			didOverhead = true;
-		}
-		cam.rotateAround(CENTER_POS, up, right ? 90 : -90);
-		cam.lookAt(0, 0, 0);
-		cam.update();
-		if (didOverhead) {
-			toggleCamera();
-		}
-	}
-
-	private void resetCamera() {
-		overheadView = false;
-		cam.position.set(PLAYER_CAM_POS);
-		cam.up.set(up);
-		cam.lookAt(0, 0, 0);
-		cam.update();
-	}
-
-	@Override
-	public boolean keyDown(int key) {
-		switch (key) {
-		case Keys.F:
-			toggleCamera();
-			break;
-		case Keys.D:
-			cyclePlayerCams(true);
-			break;
-		case Keys.A:
-			cyclePlayerCams(false);
-			break;
-		case Keys.R:
-			resetCamera();
-			break;
-		default:
-			break;
-		}
-		return false;
-	}
-
-	@Override
-	public boolean keyTyped(char key) {
-		return false;
-	}
-
-	@Override
-	public boolean keyUp(int key) {
-		return false;
-	}
-
-	@Override
-	public boolean mouseMoved(int screenX, int screenY) {
-		return camCont.mouseMoved(screenX, screenY);
-	}
-
-	@Override
-	public boolean scrolled(int amount) {
-		return camCont.scrolled(amount * 25);
-	}
-
-	@Override
-	public boolean touchDown(int x, int y, int pointer, int button) {
-		return camCont.touchDown(0, y, pointer, button);
-	}
-
-	@Override
-	public boolean touchDragged(int screenX, int screenY, int pointer) {
-		return camCont.touchDragged(0, screenY, pointer);
-	}
-
-	@Override
-	public boolean touchUp(int x, int y, int pointer, int button) {
-		return camCont.touchUp(0, y, pointer, button);
-	}
-
-	public static void main(String[] args) {
-		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-		config.title = "Jong Scene Test";
-		config.width = 1280;
-		config.height = 720;
-		config.samples = 8;
-		config.useGL30 = true;
-		config.vSyncEnabled = true;
-		config.fullscreen = false;
-		new LwjglApplication(new SceneTest(), config);
+	/**
+	 * Sets the currently rendered game. Does not update until the next start of
+	 * the next render loop.
+	 */
+	public void setGame(Game game) {
+		this.setGame = game;
 	}
 
 }

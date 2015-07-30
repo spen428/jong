@@ -10,7 +10,11 @@ public class Main {
 		config.title = "Jong";
 		config.width = 1280;
 		config.height = 720;
-		new LwjglApplication(new Jong(), config);
+		config.samples = 8;
+		config.useGL30 = true;
+		config.vSyncEnabled = true;
+		config.fullscreen = false;
+		new LwjglApplication(new GameScene(), config);
 	}
 
 }
