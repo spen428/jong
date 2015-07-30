@@ -36,7 +36,7 @@ public class Game {
 			return roundWind;
 		}
 
-		public void setRoundWind(TileValue roundWind) {
+		void setRoundWind(TileValue roundWind) {
 			this.roundWind = roundWind;
 		}
 
@@ -68,6 +68,7 @@ public class Game {
 	private final Player[] players;
 	private final Round round;
 	private int numRiichiSticks;
+	private int turn;
 
 	public Game(String name, RuleSet ruleSet, Player... players) {
 		this.name = name;
@@ -77,6 +78,7 @@ public class Game {
 				ruleSet.getNumDeadWallDraws());
 		this.round = new Round();
 		this.numRiichiSticks = 0;
+		this.turn = 0;
 	}
 
 	/**
@@ -145,12 +147,16 @@ public class Game {
 		return numRiichiSticks;
 	}
 
-	public void incrementNumRiichiSticks() {
+	void incrementNumRiichiSticks() {
 		numRiichiSticks++;
 	}
 
-	public void decrementNumRiichiSticks() {
+	void decrementNumRiichiSticks() {
 		numRiichiSticks--;
+	}
+
+	public Player getTurn() {
+		return players[turn];
 	}
 
 }
