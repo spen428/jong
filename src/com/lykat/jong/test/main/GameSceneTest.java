@@ -10,7 +10,6 @@ import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.math.Vector3;
 import com.lykat.jong.game.Game;
-import com.lykat.jong.game.Player;
 import com.lykat.jong.game.RuleSet;
 import com.lykat.jong.game.Tile;
 import com.lykat.jong.game.Wall;
@@ -34,16 +33,16 @@ public class GameSceneTest extends GameScene implements InputProcessor {
 	public GameSceneTest() {
 		RuleSet ruleSet = new RuleSet(RuleSet.GameType.RIICHI_FOUR_PLAYER);
 
-		Player p1, p2, p3, p4;
-		p1 = new Player("Player 1");
-		p2 = new Player("Player 2");
-		p3 = new Player("Player 3");
-		p4 = new Player("Player 4");
-		Player[] players = new Player[] { p1, p2, p3, p4 };
+		DummyPlayer p1, p2, p3, p4;
+		p1 = new DummyPlayer("Player 1");
+		p2 = new DummyPlayer("Player 2");
+		p3 = new DummyPlayer("Player 3");
+		p4 = new DummyPlayer("Player 4");
+		DummyPlayer[] players = new DummyPlayer[] { p1, p2, p3, p4 };
 		Game game = new Game("GameSceneTest Game", ruleSet, players);
 
 		Wall w = game.getWall();
-		for (Player p : players) {
+		for (DummyPlayer p : players) {
 			Tile[] hand = new Tile[13];
 			for (int i = 0; i < hand.length; i++) {
 				hand[i] = w.draw();
