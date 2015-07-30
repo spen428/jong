@@ -1,6 +1,7 @@
 package com.lykat.jong.game;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import com.lykat.jong.util.Sorter;
 
@@ -14,7 +15,6 @@ public class Player {
 
 	private final String name;
 	private final ArrayList<Tile> hand;
-
 	private final ArrayList<Tile> discards;
 
 	/** Visible melds. Includes open melds, closed kan, and removed bonus tiles. */
@@ -49,7 +49,7 @@ public class Player {
 	 * 
 	 * @return false if the player is not allowed to discard.
 	 */
-	public boolean discard(int index) {
+	boolean discard(int index) {
 		if (tsumoHai != null) {
 			Tile tile = hand.remove(index);
 			discard(tile);
@@ -65,7 +65,7 @@ public class Player {
 	 * 
 	 * @return false if the player did not have a tsumoHai.
 	 */
-	public boolean tsumoKiri() {
+	boolean tsumoKiri() {
 		if (tsumoHai != null) {
 			discard(tsumoHai);
 			tsumoHai = null;
@@ -83,7 +83,7 @@ public class Player {
 	 * @return false if the player could not be dealt the tile.
 	 * 
 	 */
-	public boolean deal(Tile tile) {
+	boolean deal(Tile tile) {
 		if (tsumoHai == null) {
 			this.tsumoHai = tile;
 			return true;
@@ -98,7 +98,7 @@ public class Player {
 	 * 
 	 * @return false if the player's hand already contains tiles.
 	 */
-	public boolean deal(Tile[] tiles) {
+	boolean deal(Tile[] tiles) {
 		if (hand.size() > 0) {
 			return false;
 		}
@@ -128,7 +128,7 @@ public class Player {
 	 * Does not advance the player's seat wind as this does not necessarily
 	 * change every round.
 	 */
-	public void nextRound() {
+	void nextRound() {
 		riichi = false;
 		hand.clear();
 		melds.clear();
@@ -142,7 +142,7 @@ public class Player {
 	 * @param tile
 	 *            the tile to discard.
 	 */
-	private void discard(Tile tile) {
+	void discard(Tile tile) {
 		if (tile == null) {
 			throw new IllegalArgumentException("Discard tile cannot be null.");
 		}
@@ -152,7 +152,7 @@ public class Player {
 	/**
 	 * Sorts the players hand.
 	 */
-	public void sortHand() {
+	void sortHand() {
 		Sorter.sort(hand);
 	}
 
@@ -171,7 +171,7 @@ public class Player {
 	 * 
 	 * @return Whether declaration was successful.
 	 */
-	public boolean declareRiichi() {
+	boolean declareRiichi() {
 		if (!isRiichi() && getPoints() >= 1000) {
 			removePoints(1000);
 			riichi = true;
@@ -184,7 +184,7 @@ public class Player {
 		return points;
 	}
 
-	public void addPoints(int points) {
+	void addPoints(int points) {
 		if (points < 0) {
 			throw new IllegalArgumentException(
 					"Cannot add less than zero points.");
@@ -192,7 +192,7 @@ public class Player {
 		this.points += points;
 	}
 
-	public void removePoints(int points) {
+	void removePoints(int points) {
 		if (points < 0) {
 			throw new IllegalArgumentException(
 					"Cannot remove less than zero points.");
@@ -204,7 +204,7 @@ public class Player {
 		return seatWind;
 	}
 
-	public void setSeatWind(TileValue seatWind) {
+	void setSeatWind(TileValue seatWind) {
 		this.seatWind = seatWind;
 	}
 
@@ -213,15 +213,15 @@ public class Player {
 	}
 
 	public ArrayList<Tile> getHand() {
-		return hand;
+		return (ArrayList<Tile>) Collections.unmodifiableList(hand);
 	}
 
 	public ArrayList<Meld> getMelds() {
-		return melds;
+		return (ArrayList<Meld>) Collections.unmodifiableList(melds);
 	}
 
 	public ArrayList<Tile> getDiscards() {
-		return discards;
+		return (ArrayList<Tile>) Collections.unmodifiableList(discards);
 	}
 
 }
