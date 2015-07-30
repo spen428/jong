@@ -100,6 +100,10 @@ public class Tile {
 		return this.value.isTermHon();
 	}
 
+	public boolean isRed() {
+		return red;
+	}
+
 	/**
 	 * Returns true if the tile shares the same suit and has a value that is
 	 * adjacent to this tile's in sequence. Only applies to numbered tiles.

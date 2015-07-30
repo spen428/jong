@@ -92,6 +92,36 @@ public class Player {
 	}
 
 	/**
+	 * Deals the given tiles to the player's hand. Can only be done if the
+	 * player's hand is currently empty (as at the start of a new round). The
+	 * number of tiles dealt must be equal to 13.
+	 * 
+	 * @return false if the player's hand already contains tiles.
+	 */
+	public boolean deal(Tile[] tiles) {
+		if (hand.size() > 0) {
+			return false;
+		}
+
+		if (tiles == null) {
+			throw new IllegalArgumentException("Cannot deal a null tile array.");
+		} else if (tiles.length != 13) {
+			throw new IllegalArgumentException(
+					"The number of tiles dealt to a player's hand at "
+							+ "the start of a round must be exactly 13.");
+		}
+
+		for (Tile t : tiles) {
+			if (t == null) {
+				throw new IllegalArgumentException(
+						"Cannot deal a null tile to the player's hand.");
+			}
+			hand.add(t);
+		}
+		return true;
+	}
+
+	/**
 	 * Declares that a new round has started, resetting any round-specific flags
 	 * such as riichi declaration and clearing the player's hand.
 	 * <p>
