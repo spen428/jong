@@ -21,8 +21,8 @@ public class Player {
 	private final ArrayList<Meld> melds;
 
 	private Tile tsumoHai;
-	private boolean riichi;
-	private int points;
+	protected boolean riichi;
+	protected int points;
 	private TileValue seatWind;
 
 	public Player(String name) {
@@ -65,7 +65,7 @@ public class Player {
 	 * 
 	 * @return false if the player did not have a tsumoHai.
 	 */
-	boolean tsumoKiri() {
+	protected boolean tsumoKiri() {
 		if (tsumoHai != null) {
 			discard(tsumoHai);
 			tsumoHai = null;
@@ -80,27 +80,25 @@ public class Player {
 	 * 
 	 * @param tile
 	 *            the tile to deal to the player.
-	 * @return false if the player could not be dealt the tile.
 	 * 
 	 */
-	boolean deal(Tile tile) {
-		if (tsumoHai == null) {
-			this.tsumoHai = tile;
-			return true;
+	protected void deal(Tile tile) {
+		if (tsumoHai != null) {
+			throw new IllegalStateException("Cannot deal a tile to a "
+					+ "player when they already have a tsumohai.");
 		}
-		return false;
+		this.tsumoHai = tile;
 	}
 
 	/**
 	 * Deals the given tiles to the player's hand. Can only be done if the
 	 * player's hand is currently empty (as at the start of a new round). The
 	 * number of tiles dealt must be equal to 13.
-	 * 
-	 * @return false if the player's hand already contains tiles.
 	 */
-	boolean deal(Tile[] tiles) {
+	protected void deal(Tile[] tiles) {
 		if (hand.size() > 0) {
-			return false;
+			throw new IllegalStateException("Cannot deal a hand to a player "
+					+ "that already has more than 0 tiles in their hand. ");
 		}
 
 		if (tiles == null) {
@@ -118,7 +116,6 @@ public class Player {
 			}
 			hand.add(t);
 		}
-		return true;
 	}
 
 	/**
@@ -142,7 +139,7 @@ public class Player {
 	 * @param tile
 	 *            the tile to discard.
 	 */
-	void discard(Tile tile) {
+	protected void discard(Tile tile) {
 		if (tile == null) {
 			throw new IllegalArgumentException("Discard tile cannot be null.");
 		}
@@ -171,7 +168,7 @@ public class Player {
 	 * 
 	 * @return Whether declaration was successful.
 	 */
-	boolean declareRiichi() {
+	protected boolean declareRiichi() {
 		if (!isRiichi() && getPoints() >= 1000) {
 			removePoints(1000);
 			riichi = true;
@@ -184,7 +181,7 @@ public class Player {
 		return points;
 	}
 
-	void addPoints(int points) {
+	protected void addPoints(int points) {
 		if (points < 0) {
 			throw new IllegalArgumentException(
 					"Cannot add less than zero points.");
@@ -192,7 +189,7 @@ public class Player {
 		this.points += points;
 	}
 
-	void removePoints(int points) {
+	protected void removePoints(int points) {
 		if (points < 0) {
 			throw new IllegalArgumentException(
 					"Cannot remove less than zero points.");
