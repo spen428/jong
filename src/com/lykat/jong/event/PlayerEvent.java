@@ -13,7 +13,7 @@ import com.lykat.jong.game.Player;
 public class PlayerEvent extends EventObject {
 
 	public enum PlayerEventType {
-		DRAW_FROM_LIVE_WALL, DRAW_FROM_DEAD_WALL, DISCARD_FROM_HAND, DISCARD_TSUMOHAI, DECLARE_RIICHI, DECLARE_BONUS_TILE, DECLARE_REDEAL, DECLARE_TSUMO, DECLARE_KAN, CALL_PON, CALL_CHII, CALL_RON, CALL_KAN, SKIP_CALL;
+		DRAW_FROM_LIVE_WALL, DRAW_FROM_DEAD_WALL, DISCARD, DECLARE_RIICHI, DECLARE_BONUS_TILE, DECLARE_REDEAL, DECLARE_TSUMO, DECLARE_KAN, CALL_PON, CALL_CHII, CALL_RON, CALL_KAN, SKIP_CALL;
 
 		/**
 		 * Returns true if the event requires it to be the player's turn.
@@ -25,8 +25,7 @@ public class PlayerEvent extends EventObject {
 			case DECLARE_REDEAL:
 			case DECLARE_RIICHI:
 			case DECLARE_TSUMO:
-			case DISCARD_FROM_HAND:
-			case DISCARD_TSUMOHAI:
+			case DISCARD:
 			case DRAW_FROM_DEAD_WALL:
 			case DRAW_FROM_LIVE_WALL:
 				return true;

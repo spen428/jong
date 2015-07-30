@@ -100,7 +100,11 @@ public class Wall {
 	}
 
 	public int getNumRemainingDeadWallDraws() {
-		return remainingDeadWallDraws;
+		if (getNumRemainingDraws() < remainingDeadWallDraws) {
+			return getNumRemainingDraws();
+		} else {
+			return remainingDeadWallDraws;
+		}
 	}
 
 	public int getTotalNumDeadWallDraws() {

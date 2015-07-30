@@ -1,5 +1,6 @@
 package com.lykat.jong.game;
 
+
 /**
  * Represents a game of Mahjong. Responsible for distributing tiles to players
  * and handling tile calls.
@@ -157,6 +158,28 @@ public class Game {
 
 	public Player getTurn() {
 		return players[turn];
+	}
+
+	public int getTurnIndex(Player player) {
+		for (int i = 0; i < players.length; i++) {
+			if (players[i] == player) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	boolean setTurn(Player player) {
+		int turn = getTurnIndex(player);
+		if (turn > -1) {
+			this.turn = turn;
+			return true;
+		}
+		return false;
+	}
+
+	void nextTurn() {
+		turn = (turn + 1) % players.length;
 	}
 
 }
