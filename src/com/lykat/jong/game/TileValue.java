@@ -1,7 +1,7 @@
 package com.lykat.jong.game;
 
 public enum TileValue {
-	II(1), RYAN(2), SAN(3), SUU(4), UU(5), SIX(6), CHII(7), PAA(8), CHUU(9), TON(
+	II(1), RYAN(2), SAN(3), SUU(4), UU(5), RYUU(6), CHII(7), PAA(8), CHUU(9), TON(
 			10), NAN(11), SHAA(12), PEI(13), CHUN(14), HAKU(15), HATSU(16);
 
 	private final int value;
