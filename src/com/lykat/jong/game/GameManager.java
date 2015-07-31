@@ -13,30 +13,29 @@ import com.lykat.jong.game.Meld.MeldType;
 public class GameManager implements PlayerEventListener {
 
 	private enum GameState {
-		MUST_DRAW_LIVE, MUST_DRAW_DEAD, MUST_DISCARD, WAITING, WAITING_FOR_CALLERS, WIN_DECLARED, EXTENDED_KAN_DECLARED, CLOSED_KAN_DECLARED, BONUS_TILE_DECLARED;
+		MUST_DRAW_LIVE, MUST_DRAW_DEAD, MUST_DISCARD, WAITING, WAITING_FOR_CALLERS, WIN_DECLARED, EXTENDED_KAN_DECLARED, CLOSED_KAN_DECLARED, BONUS_TILE_DECLARED, EXHAUSTIVE_DRAW;
 	}
 
 	private class Call {
-
 		private final Player player;
-		private final CallType call;
+		private final CallType callType;
 
-		public Call(Player player, CallType call) {
+		public Call(Player player, CallType callType) {
 			this.player = player;
-			this.call = call;
+			this.callType = callType;
 		}
 
 		public Player getPlayer() {
 			return player;
 		}
 
-		public CallType getCall() {
-			return call;
+		public CallType getCallType() {
+			return callType;
 		}
 	}
 
 	private enum CallType {
-		RON, PON, CHII, KAN_OPEN;
+		RON, PON, CHII, KAN;
 	}
 
 	private int toFlip;
@@ -75,19 +74,13 @@ public class GameManager implements PlayerEventListener {
 		return false;
 	}
 
-	private final ArrayList<PlayerEvent> waiting = new ArrayList<PlayerEvent>();
-
 	@Override
 	public void handleEvent(PlayerEvent event) {
+		// TODO: Timeouts
 		PlayerEventType eventType = event.getEventType();
 		Player player = event.getSource();
-		Player turn = game.getTurn();
-		Wall wall = game.getWall();
-		boolean isTurn = (player == turn);
+		boolean isTurn = (player == game.getTurn());
 
-		if (wall.getNumRemainingDraws() == 0) {
-			// TODO: Exhaustive draw
-		}
 		if (gameState == GameState.CLOSED_KAN_DECLARED
 				|| gameState == GameState.EXTENDED_KAN_DECLARED
 				|| gameState == GameState.BONUS_TILE_DECLARED
@@ -97,20 +90,19 @@ public class GameManager implements PlayerEventListener {
 			} else if (eventType == PlayerEventType.SKIP_CALL) {
 				removeCaller(player);
 			}
-			// TODO: Timeout
 		} else if (gameState == GameState.MUST_DISCARD) {
 			if (eventType == PlayerEventType.DISCARD && isTurn) {
 				discard(event);
 			}
 		} else if (gameState == GameState.MUST_DRAW_DEAD) {
 			if (eventType == PlayerEventType.DRAW_FROM_DEAD_WALL && isTurn) {
-				player.deal(wall.deadWallDraw());
+				player.deal(game.getWall().deadWallDraw());
 				deadDraw = true;
 				gameState = GameState.WAITING;
 			}
 		} else if (gameState == GameState.MUST_DRAW_LIVE) {
 			if (eventType == PlayerEventType.DRAW_FROM_LIVE_WALL && isTurn) {
-				player.deal(wall.draw());
+				player.deal(game.getWall().draw());
 				gameState = GameState.WAITING;
 			}
 		} else if (gameState == GameState.WAITING) {
@@ -125,16 +117,19 @@ public class GameManager implements PlayerEventListener {
 					declareBonusTile(event);
 				} else if (eventType == PlayerEventType.DECLARE_TSUMO) {
 					declareTsumo(event);
+				} else if (eventType == PlayerEventType.DECLARE_REDEAL) {
+					declareRedeal(event);
 				}
 			}
 		} else if (gameState == GameState.WIN_DECLARED) {
+		} else if (gameState == GameState.EXHAUSTIVE_DRAW) {
 		} else {
 		}
 	}
 
 	/**
-	 * Signal that the given player has called. If they are the only valid
-	 * caller remaining, this will change the game state.
+	 * Signal that the player in the given event has called. If they are the
+	 * only valid caller remaining, this will change the game state.
 	 */
 	private void called(Player player) {
 		// TODO Auto-generated method stub
@@ -142,9 +137,9 @@ public class GameManager implements PlayerEventListener {
 			// TODO: Prioritise calls
 			if (canCall.size() == 0) {
 				if (called.size() == 1) {
-					// TODO: Apply call
+					doCall(called.get(0));
 				} else if (called.size() > 1) {
-					// TODO: Multi-Ron
+					multiRon(called);
 				} else {
 					throw new IllegalStateException("Called list is empty! "
 							+ "Concurrent modification?");
@@ -172,8 +167,13 @@ public class GameManager implements PlayerEventListener {
 		}
 	}
 
-	private void declareRon(PlayerEvent event) {
+	private void doCall(Call call) {
 		// TODO
+		throw new UnsupportedOperationException("Unimplemented");
+	}
+
+	private void multiRon(ArrayList<Call> called2) {
+		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("Unimplemented");
 	}
 
@@ -187,6 +187,11 @@ public class GameManager implements PlayerEventListener {
 		throw new UnsupportedOperationException("Unimplemented");
 	}
 
+	private void declareRedeal(PlayerEvent event) {
+		// TODO Auto-generated method stub
+		
+	}
+	
 	private void declareRiichi(PlayerEvent event) {
 		if (event.getSource().declareRiichi()) {
 			game.incrementNumRiichiSticks();
@@ -212,6 +217,8 @@ public class GameManager implements PlayerEventListener {
 		}
 		if (hasCallers(event)) {
 			gameState = GameState.WAITING_FOR_CALLERS;
+		} else if (game.getWall().getNumRemainingDraws() == 0) {
+			gameState = GameState.EXHAUSTIVE_DRAW;
 		} else {
 			game.nextTurn();
 			gameState = GameState.MUST_DRAW_LIVE;
@@ -246,6 +253,8 @@ public class GameManager implements PlayerEventListener {
 	 *            the discard event
 	 */
 	private boolean hasCallers(PlayerEvent event) {
+		// TODO
+		// game.getWall().getNumRemainingDraws() == 0
 		Tile tile = event.getSource().getLatestDiscard();
 		PlayerEventType eventType = event.getEventType();
 		if (eventType == PlayerEventType.CALL_CHII) {
@@ -266,14 +275,4 @@ public class GameManager implements PlayerEventListener {
 		return false;
 	}
 
-	private PlayerEvent waiting(PlayerEvent event) {
-		for (PlayerEvent wait : waiting) {
-			if (wait.getEventType() == event.getEventType()) {
-				if (wait.getSource() == event.getSource()) {
-					return wait;
-				}
-			}
-		}
-		return null;
-	}
 }
