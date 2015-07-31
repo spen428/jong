@@ -23,12 +23,12 @@ public class DummyPlayer extends Player {
 		super.deal(tiles);
 	}
 
-	public void discard(Tile tile) {
-		super.discard(tile);
+	public void addToDiscardPond(Tile tile) {
+		super.addToDiscardPond(tile);
 	}
 
-	public boolean tsumoKiri() {
-		return super.tsumoKiri();
+	public void tsumoKiri() {
+		super.tsumoKiri();
 	}
 
 	public void addPoints(int points) {

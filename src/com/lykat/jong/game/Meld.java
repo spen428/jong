@@ -20,11 +20,29 @@ public class Meld {
 		}
 	}
 
+	public enum MeldSource {
+		LEFT, ACROSS, RIGHT, SELF;
+	}
+
 	private final Tile[] tiles;
 	private final Tile callTile;
 	private final MeldType type;
+	private final MeldSource meldSource;
 
-	public Meld(Tile[] tiles, Tile callTile, MeldType type) {
+	/**
+	 * Represents a declared meld.
+	 * 
+	 * @param tiles
+	 *            the tiles that make up this meld
+	 * @param callTile
+	 *            the tile that was called to form the meld
+	 * @param meldSource
+	 *            the source of the meld
+	 * @param type
+	 *            the meld type
+	 */
+	public Meld(Tile[] tiles, Tile callTile, MeldSource meldSource,
+			MeldType type) {
 		super();
 
 		if (tiles == null) {
@@ -41,7 +59,12 @@ public class Meld {
 		this.tiles = tiles;
 		this.callTile = callTile;
 		this.type = type;
+		this.meldSource = MeldSource.SELF;
 		Sorter.sort(tiles);
+	}
+
+	public Meld(Tile[] tiles, MeldType type) {
+		this(tiles, null, MeldSource.SELF, type);
 	}
 
 	@Override
@@ -50,7 +73,7 @@ public class Meld {
 		for (int i = 0; i < tiles.length; i++) {
 			newTiles[i] = tiles[i].clone();
 		}
-		return new Meld(newTiles, this.callTile, this.type);
+		return new Meld(newTiles, this.callTile, this.meldSource, this.type);
 	}
 
 	@Override
@@ -101,4 +124,9 @@ public class Meld {
 	public boolean isOpen() {
 		return type.isOpen();
 	}
+
+	public MeldSource getMeldSource() {
+		return meldSource;
+	}
+
 }

@@ -3,6 +3,8 @@ package com.lykat.jong.game;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import com.lykat.jong.game.Meld.MeldSource;
+import com.lykat.jong.game.Meld.MeldType;
 import com.lykat.jong.util.Sorter;
 
 /**
@@ -24,6 +26,7 @@ public class Player {
 	protected boolean riichi;
 	protected int points;
 	private TileValue seatWind;
+	protected boolean madeCall;
 
 	public Player(String name) {
 		super();
@@ -40,24 +43,36 @@ public class Player {
 		this.riichi = false;
 		this.points = 0;
 		this.seatWind = null;
+		this.madeCall = false;
 	}
 
 	/**
 	 * Discard the tile at the given index of the player's hand. Subsequently
 	 * moves the 'tsumoHai' into the hand and sets tsumoHai to null. Only
-	 * allowed if the player has a tsumoHai.
+	 * allowed if the player has a tsumoHai or a meld call has just been made.
 	 * 
-	 * @return false if the player is not allowed to discard.
+	 * @param index
+	 *            the index of the tile to discard from the hand. If set to -1,
+	 *            the player will tsumokiri instead.
 	 */
-	boolean discard(int index) {
-		if (tsumoHai != null) {
+	void discard(int index) {
+		if (index == -1) {
+			tsumoKiri();
+		} else {
+			if (tsumoHai == null) {
+				if (!madeCall) {
+					throw new IllegalStateException(
+							"The player has not drawn a "
+									+ "tile, so is not allowed to discard one.");
+				}
+				madeCall = false;
+			} else {
+				hand.add(tsumoHai);
+				tsumoHai = null;
+			}
 			Tile tile = hand.remove(index);
-			discard(tile);
-			hand.add(tsumoHai);
-			tsumoHai = null;
-			return true;
+			addToDiscardPond(tile);
 		}
-		return false;
 	}
 
 	/**
@@ -65,13 +80,13 @@ public class Player {
 	 * 
 	 * @return false if the player did not have a tsumoHai.
 	 */
-	protected boolean tsumoKiri() {
-		if (tsumoHai != null) {
-			discard(tsumoHai);
-			tsumoHai = null;
-			return true;
+	protected void tsumoKiri() {
+		if (tsumoHai == null) {
+			throw new IllegalStateException("The player has not drawn a "
+					+ "tile, so is not allowed to tsumokiri.");
 		}
-		return false;
+		addToDiscardPond(tsumoHai);
+		tsumoHai = null;
 	}
 
 	/**
@@ -139,7 +154,7 @@ public class Player {
 	 * @param tile
 	 *            the tile to discard.
 	 */
-	protected void discard(Tile tile) {
+	protected void addToDiscardPond(Tile tile) {
 		if (tile == null) {
 			throw new IllegalArgumentException("Discard tile cannot be null.");
 		}
@@ -221,4 +236,75 @@ public class Player {
 		return (ArrayList<Tile>) Collections.unmodifiableList(discards);
 	}
 
+	/**
+	 * Adds the given meld to the player's melds. Removes any tiles that are
+	 * part of the meld from the player's hand.
+	 * 
+	 * @param meld
+	 */
+	public void addMeld(Meld meld) {
+		if (madeCall) {
+			throw new IllegalStateException("The player has not yet "
+					+ "discarded from a previous meld call.");
+		}
+
+		/* How many of the meld's tiles were in the player's hand? */
+		int inHand = 0;
+		Tile[] meldTiles = meld.getTiles();
+		for (Tile tile : meldTiles) {
+			if (hand.remove(tile)) {
+				inHand++;
+			}
+		}
+
+		/* Check validity based on inHand count */
+		MeldType type = meld.getType();
+		if (type == MeldType.KANTSU_CLOSED && inHand == 4) {
+			melds.add(meld);
+		} else if (type == MeldType.KANTSU_EXTENDED && inHand == 1) {
+			/* Must not add this meld to melds; must update existing meld. */
+			Tile tile = meld.getCallTile();
+			extendKan(tile);
+		} else if (type == MeldType.KANTSU_OPEN && inHand == 3) {
+			madeCall = true;
+			melds.add(meld);
+		} else if (type == MeldType.KOUTSU_OPEN && inHand == 2) {
+			madeCall = true;
+			melds.add(meld);
+		} else if (type == MeldType.SHUNTSU_OPEN && inHand == 2) {
+			madeCall = true;
+			melds.add(meld);
+		} else {
+			throw new IllegalStateException("Attempted to add an invalid "
+					+ "meld to the player's melds: " + meld.toString());
+		}
+	}
+
+	private void extendKan(Tile tile) {
+		/* Find the meld to update */
+		int index = 0;
+		for (Meld m : melds) {
+			if (m.getType() == MeldType.KOUTSU_OPEN && m.getCallTile() == tile) {
+				break;
+			}
+			index++;
+		}
+		if (index >= melds.size()) {
+			throw new IllegalStateException("Attempted to extend a kan "
+					+ "that does not exist: " + tile.toString());
+		} else {
+			Meld oldMeld = melds.get(index);
+			Tile[] tiles = oldMeld.getTiles();
+			Tile callTile = oldMeld.getCallTile();
+			MeldSource meldSource = oldMeld.getMeldSource();
+			Meld newMeld = new Meld(tiles, callTile, meldSource,
+					MeldType.KANTSU_EXTENDED);
+			melds.remove(oldMeld);
+			melds.add(index, newMeld);
+		}
+	}
+
+	public Tile getLatestDiscard() {
+		return discards.get(discards.size() - 1);
+	}
 }
