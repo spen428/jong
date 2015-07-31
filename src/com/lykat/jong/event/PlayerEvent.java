@@ -33,6 +33,21 @@ public class PlayerEvent extends EventObject {
 				return false;
 			}
 		}
+
+		/**
+		 * Returns true if this is a Chii, Kan, Pon, or Ron event
+		 */
+		public boolean isCall() {
+			switch (this) {
+			case CALL_CHII:
+			case CALL_KAN:
+			case CALL_PON:
+			case CALL_RON:
+				return true;
+			default:
+				return false;
+			}
+		}
 	}
 
 	private final Player source;
