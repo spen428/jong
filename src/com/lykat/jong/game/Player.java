@@ -1,7 +1,6 @@
 package com.lykat.jong.game;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 import com.lykat.jong.game.Meld.MeldSource;
 import com.lykat.jong.game.Meld.MeldType;
