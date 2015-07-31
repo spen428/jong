@@ -225,15 +225,15 @@ public class Player {
 	}
 
 	public ArrayList<Tile> getHand() {
-		return (ArrayList<Tile>) Collections.unmodifiableList(hand);
+		return new ArrayList<Tile>(hand);
 	}
 
 	public ArrayList<Meld> getMelds() {
-		return (ArrayList<Meld>) Collections.unmodifiableList(melds);
+		return new ArrayList<Meld>(melds);
 	}
 
 	public ArrayList<Tile> getDiscards() {
-		return (ArrayList<Tile>) Collections.unmodifiableList(discards);
+		return new ArrayList<Tile>(discards);
 	}
 
 	/**
