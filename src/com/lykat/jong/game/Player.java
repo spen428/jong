@@ -306,4 +306,9 @@ public class Player {
 	public Tile getLatestDiscard() {
 		return discards.get(discards.size() - 1);
 	}
+
+	public void removeLatestDiscard() {
+		discards.remove(getLatestDiscard());
+	}
+
 }
