@@ -39,7 +39,7 @@ public class GameSceneTest extends GameScene implements InputProcessor {
 		p3 = new DummyPlayer("Player 3");
 		p4 = new DummyPlayer("Player 4");
 		DummyPlayer[] players = new DummyPlayer[] { p1, p2, p3, p4 };
-		Game game = new Game("GameSceneTest Game", ruleSet);
+		Game game = new DummyGame("GameSceneTest Game", ruleSet, players);
 
 		Wall w = game.getWall();
 		for (DummyPlayer p : players) {
