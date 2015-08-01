@@ -11,6 +11,7 @@ public class Tile {
 	private final TileSuit suit;
 	private final TileValue value;
 	private final boolean red;
+	private final String toString;
 
 	/**
 	 * A Mahjong tile.
@@ -40,6 +41,8 @@ public class Tile {
 		this.suit = suit;
 		this.value = value;
 		this.red = red;
+		this.toString = String.format("%s %s %s", value.toString(),
+				suit.toString(), this.red ? "(Red)" : "").trim();
 	}
 
 	/**
@@ -70,9 +73,7 @@ public class Tile {
 
 	@Override
 	public String toString() {
-		// TODO: It is worth memoizing this method if it is to be heavily used.
-		return String.format("%s %s %s", value.toString(), suit.toString(),
-				this.red ? "(Red)" : "").trim();
+		return toString;
 	}
 
 	@Override
@@ -119,7 +120,7 @@ public class Tile {
 	public boolean isWind() {
 		return this.value.isWind();
 	}
-	
+
 	public boolean isDragon() {
 		return this.value.isDragon();
 	}

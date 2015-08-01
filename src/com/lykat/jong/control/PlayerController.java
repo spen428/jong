@@ -91,8 +91,8 @@ public class PlayerController extends AbstractPlayerController {
 		switch (keycode) {
 		case Keys.NUM_1:
 			LOGGER.log(Level.FINER, "Firing event: "
-					+ GameEventType.PLAYER_CONNECTED.toString());
-			super.fireEvent(GameEventType.PLAYER_CONNECTED, this);
+					+ GameEventType.PLAYER_CONNECT.toString());
+			super.fireEvent(GameEventType.PLAYER_CONNECT, this);
 			break;
 		case Keys.F:
 			super.discard(-1);

@@ -28,7 +28,7 @@ import com.lykat.jong.main.GameScene;
  * @author lykat
  *
  */
-public class GameplayTest extends GameScene implements InputProcessor, Observer {
+public class GameplayTest extends GameScene implements InputProcessor {
 
 	private boolean overheadView;
 	private Vector3 prevCamPos = new Vector3();
@@ -52,12 +52,6 @@ public class GameplayTest extends GameScene implements InputProcessor, Observer 
 		}
 
 		super.setGame(game);
-	}
-
-	@Override
-	public void update(Observable o, Object arg) {
-		System.out.println("Updating");
-		this.render();
 	}
 
 	@Override
@@ -185,7 +179,7 @@ public class GameplayTest extends GameScene implements InputProcessor, Observer 
 		handler.setLevel(Level.ALL);
 		logger.addHandler(handler);
 		logger.setLevel(Level.ALL);
-		logger.log(Level.FINER, "Logger initialised.");
+		logger.log(Level.FINER, "PlayerController logger initialised.");
 
 		logger = GameManager.LOGGER;
 		handler = new ConsoleHandler();
@@ -193,7 +187,15 @@ public class GameplayTest extends GameScene implements InputProcessor, Observer 
 		handler.setLevel(Level.ALL);
 		logger.addHandler(handler);
 		logger.setLevel(Level.ALL);
-		logger.log(Level.FINER, "Logger initialised.");
+		logger.log(Level.FINER, "GameManager logger initialised.");
+
+		logger = GameScene.LOGGER;
+		handler = new ConsoleHandler();
+		handler.setFormatter(new SimpleFormatter());
+		handler.setLevel(Level.ALL);
+		logger.addHandler(handler);
+		logger.setLevel(Level.FINER);
+		logger.log(Level.FINER, "Graphics logger initialised.");
 	}
 
 }

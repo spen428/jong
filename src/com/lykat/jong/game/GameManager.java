@@ -88,14 +88,12 @@ public class GameManager implements EventListener {
 		Player player = event.getSource();
 		boolean isTurn = (player == game.getTurn());
 
-		LOGGER.log(Level.FINER, "Received GameEvent: " + eventType.toString());
-
 		if (gameState == GameState.WAITING_FOR_PLAYERS) {
-			if (eventType == GameEventType.PLAYER_CONNECTED) {
+			if (eventType == GameEventType.PLAYER_CONNECT) {
 				AbstractPlayerController conn = (AbstractPlayerController) event
 						.getEventData();
 				if (connect(conn)) {
-					fireEventAllPlayers(GameEventType.PLAYER_CONNECTED, conn);
+					fireEventAllPlayers(GameEventType.PLAYER_CONNECT, conn);
 					if (numConnectedPlayers() == players.length) {
 						TileValue seatWind = TileValue.TON;
 						for (int i = 0; i < players.length; i++) {
@@ -159,8 +157,10 @@ public class GameManager implements EventListener {
 			/* Set up */
 			setUpNewRound();
 		} else {
-			System.err.printf("Unhandled event: %s%n", eventType.toString());
+			LOGGER.log(Level.FINE, "Unhandled event: " + eventType.toString());
 		}
+
+		LOGGER.log(Level.FINER, "Current gamestate: " + gameState.toString());
 	}
 
 	private void setUpNewRound() {
@@ -576,12 +576,17 @@ public class GameManager implements EventListener {
 
 			/* Notify player */
 			for (Call c : canCall) {
-				if (c.getPlayer() == player) {
-					fireEvent(player, c.getCallEvent(), c);
+				Player caller = c.getPlayer();
+				if (caller == player) {
+					GameEventType callEvent = c.getCallEvent();
+					fireEvent(player, callEvent, c);
+					LOGGER.log(Level.FINE, "Player " + player.getName()
+							+ " has a " + callEvent.toString() + " call");
 				}
 			}
 
 		}
+
 		return (canCall.size() > 0);
 	}
 

@@ -18,7 +18,7 @@ public class TsumokiriAI extends AbstractPlayerController {
 	}
 	
 	public void connect() {
-		super.fireEvent(GameEventType.PLAYER_CONNECTED, this);
+		super.fireEvent(GameEventType.PLAYER_CONNECT, this);
 	}
 
 	@Override
@@ -35,9 +35,10 @@ public class TsumokiriAI extends AbstractPlayerController {
 				} else if (state == GameState.MUST_DRAW_DEAD) {
 					super.fireEvent(GameEventType.DRAW_FROM_DEAD_WALL);
 				}
-				super.tsumoKiri();
 			}
 		}
+		
+		super.tsumoKiri();
 
 		super.notifyObservers();
 	}
@@ -75,8 +76,8 @@ public class TsumokiriAI extends AbstractPlayerController {
 		switch (keycode) {
 		case Keys.NUM_1:
 			LOGGER.log(Level.FINER, "Firing event: "
-					+ GameEventType.PLAYER_CONNECTED.toString());
-			super.fireEvent(GameEventType.PLAYER_CONNECTED, this);
+					+ GameEventType.PLAYER_CONNECT.toString());
+			super.fireEvent(GameEventType.PLAYER_CONNECT, this);
 			break;
 		case Keys.F:
 			super.discard(-1);
