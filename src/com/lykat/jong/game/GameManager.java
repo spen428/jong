@@ -2,6 +2,8 @@ package com.lykat.jong.game;
 
 import java.util.ArrayList;
 import java.util.EventListener;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.lykat.jong.calc.Hand;
 import com.lykat.jong.calc.Yaku;
@@ -11,27 +13,44 @@ import com.lykat.jong.game.Meld.MeldType;
 
 public class GameManager implements EventListener {
 
+	public static final Logger LOGGER = Logger.getLogger("GameManager");
+	public static final Player SERVER_PLAYER = new Player("Server");
+
 	public enum GameState {
-		MUST_DRAW_LIVE, MUST_DRAW_DEAD, MUST_DISCARD, WAITING, WAITING_FOR_CALLERS, END_OF_ROUND, EXTENDED_KAN_DECLARED, CLOSED_KAN_DECLARED, BONUS_TILE_DECLARED, GAME_OVER;
+		MUST_DRAW_LIVE, MUST_DRAW_DEAD, MUST_DISCARD, WAITING, WAITING_FOR_CALLERS, END_OF_ROUND, EXTENDED_KAN_DECLARED, CLOSED_KAN_DECLARED, BONUS_TILE_DECLARED, GAME_OVER, WAITING_FOR_PLAYERS;
 	}
 
 	private int toFlip;
-	private boolean deadDraw;
 	private GameState gameState;
 	private ArrayList<Call> canCall, called;
 
 	private final Game game;
 	private final AbstractPlayerController[] players;
 
-	public GameManager(Game game, AbstractPlayerController[] players) {
+	public GameManager(Game game) {
 		super();
 		this.game = game;
-		this.players = players;
+		this.players = new AbstractPlayerController[game.getRuleSet()
+				.getNumPlayers()];
 		this.toFlip = 0;
-		this.deadDraw = false;
-		this.gameState = GameState.END_OF_ROUND;
+		this.gameState = GameState.WAITING_FOR_PLAYERS;
 		this.canCall = new ArrayList<Call>();
 		this.called = new ArrayList<Call>();
+	}
+
+	private boolean connect(AbstractPlayerController player) {
+		// TODO: no duplicates
+		for (int i = 0; i < players.length; i++) {
+			if (players[i] == null) {
+				players[i] = player;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public Game getGame() {
+		return game;
 	}
 
 	private void fireEventAllPlayers(GameEventType eventType, Object eventData) {
@@ -47,14 +66,16 @@ public class GameManager implements EventListener {
 
 	private void fireEvent(AbstractPlayerController target,
 			GameEventType eventType, Object eventData) {
-		GameEvent event = new GameEvent(null, eventType, eventData,
-				System.currentTimeMillis());
-		target.handleEvent(event);
+		if (target != null) {
+			GameEvent event = new GameEvent(SERVER_PLAYER, eventType,
+					eventData, System.currentTimeMillis());
+			target.handleEvent(event);
+		}
 	}
 
 	private AbstractPlayerController getPlayerController(Player player) {
 		for (AbstractPlayerController p : players) {
-			if (p.getPlayer() == player) {
+			if (p != null && p.getPlayer() == player) {
 				return p;
 			}
 		}
@@ -67,7 +88,30 @@ public class GameManager implements EventListener {
 		Player player = event.getSource();
 		boolean isTurn = (player == game.getTurn());
 
-		if (gameState == GameState.CLOSED_KAN_DECLARED
+		LOGGER.log(Level.FINER, "Received GameEvent: " + eventType.toString());
+
+		if (gameState == GameState.WAITING_FOR_PLAYERS) {
+			if (eventType == GameEventType.PLAYER_CONNECTED) {
+				AbstractPlayerController conn = (AbstractPlayerController) event
+						.getEventData();
+				if (connect(conn)) {
+					fireEventAllPlayers(GameEventType.PLAYER_CONNECTED, conn);
+					if (numConnectedPlayers() == players.length) {
+						TileValue seatWind = TileValue.TON;
+						for (int i = 0; i < players.length; i++) {
+							game.newPlayer(players[i].getName());
+							Player p = game.getPlayers()[i];
+							p.setSeatWind(seatWind);
+							players[i].setPlayer(p);
+							seatWind = Game.nextWind(seatWind, true);
+						}
+						setUpNewRound();
+					}
+				} else {
+					// TODO Player could not connect
+				}
+			}
+		} else if (gameState == GameState.CLOSED_KAN_DECLARED
 				|| gameState == GameState.EXTENDED_KAN_DECLARED
 				|| gameState == GameState.BONUS_TILE_DECLARED
 				|| gameState == GameState.WAITING_FOR_CALLERS) {
@@ -83,7 +127,7 @@ public class GameManager implements EventListener {
 		} else if (gameState == GameState.MUST_DRAW_DEAD) {
 			if (eventType == GameEventType.DRAW_FROM_DEAD_WALL && isTurn) {
 				player.deal(game.getWall().deadWallDraw());
-				deadDraw = true;
+				game.setDeadDraw(true);
 				gameState = GameState.WAITING;
 				fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
 			}
@@ -113,17 +157,34 @@ public class GameManager implements EventListener {
 			// TODO: Players must click to proceed.
 
 			/* Set up */
-			Wall wall = game.getWall();
-			wall.reset();
-			for (Player p : game.getPlayers()) {
-				p.nextRound();
-				p.deal(wall.haipai());
-			}
-			gameState = GameState.MUST_DRAW_LIVE;
-			fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
+			setUpNewRound();
 		} else {
 			System.err.printf("Unhandled event: %s%n", eventType.toString());
 		}
+	}
+
+	private void setUpNewRound() {
+		Wall wall = game.getWall();
+		wall.reset();
+		game.resetFourWindsAbort();
+		game.setDeadDraw(false);
+		for (Player p : game.getPlayers()) {
+			p.nextRound();
+			p.deal(wall.haipai());
+		}
+		gameState = GameState.MUST_DRAW_LIVE;
+		fireEventAllPlayers(GameEventType.ROUND_STARTED, null);
+		fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
+	}
+
+	private int numConnectedPlayers() {
+		int num = 0;
+		for (int i = 0; i < players.length; i++) {
+			if (players[i] != null) {
+				num++;
+			}
+		}
+		return num;
 	}
 
 	/**
@@ -245,6 +306,7 @@ public class GameManager implements EventListener {
 		caller.addMeld(call.getMeld());
 
 		fireEvent(discarder, GameEventType.TURN_FINISHED, null);
+		game.interruptPlayers();
 		game.setTurn(caller);
 
 		if (call.getCallEvent() == GameEventType.CALL_KAN) {
@@ -267,8 +329,12 @@ public class GameManager implements EventListener {
 	private void declareRon(Player winner, boolean changeGameState) {
 		// TODO
 		boolean isDealer = (winner == game.getDealer());
-		boolean houtei = (game.getWall().getNumRemainingDraws() == 0);
 		boolean chankan = (gameState == GameState.EXTENDED_KAN_DECLARED || gameState == GameState.CLOSED_KAN_DECLARED);
+		boolean houtei = !chankan
+				&& (gameState != GameState.BONUS_TILE_DECLARED)
+				&& (game.getWall().getNumRemainingDraws() == 0);
+		boolean riichi = winner.isRiichi();
+		boolean ippatsu = riichi && !winner.isInterrupted();
 
 		int payment = -1;
 		// TODO: Calculate ron payment
@@ -346,7 +412,7 @@ public class GameManager implements EventListener {
 	private void declareTsumo(Player winner) {
 		// TODO
 		boolean haitei = false;
-		boolean rinshan = deadDraw;
+		boolean rinshan = game.isDeadDraw();
 		gameState = GameState.END_OF_ROUND;
 		fireEventAllPlayers(GameEventType.DECLARE_TSUMO, winner);
 	}
@@ -355,6 +421,7 @@ public class GameManager implements EventListener {
 		Player player = event.getSource();
 		Tile tile = (Tile) event.getEventData();
 		player.declareBonusTile(tile);
+		game.interruptPlayers();
 		gameState = GameState.BONUS_TILE_DECLARED;
 		fireEventAllPlayers(GameEventType.DECLARE_BONUS_TILE, player);
 		if (!hasCallers(event)) {
@@ -393,8 +460,8 @@ public class GameManager implements EventListener {
 		Player player = event.getSource();
 		int index = (int) event.getEventData();
 		player.discard(index);
+		game.setDeadDraw(false);
 
-		deadDraw = false;
 		while (toFlip > 0) {
 			game.getWall().flipDora();
 			toFlip--;
@@ -438,6 +505,7 @@ public class GameManager implements EventListener {
 			return;
 		}
 
+		game.interruptPlayers();
 		Meld meld = (Meld) event.getEventData();
 		Player player = event.getSource();
 		if (meld.getType() == MeldType.KANTSU_CLOSED) {

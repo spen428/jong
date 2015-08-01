@@ -5,7 +5,7 @@ import java.util.EventObject;
 public class GameEvent extends EventObject {
 
 	public enum GameEventType {
-		DRAW_FROM_LIVE_WALL, DRAW_FROM_DEAD_WALL, DISCARD, DECLARE_RIICHI, DECLARE_BONUS_TILE, ABORT_KYUUSHU_KYUUHAI, DECLARE_TSUMO, DECLARE_KAN, CALL_PON, CALL_CHII, CALL_RON, CALL_KAN, SKIP_CALL, CALL_AVAILABLE, TURN_STARTED, TURN_FINISHED, ABORT_ALL_RIICHI, ABORT_4_KAN, ABORT_CHOMBO, EXHAUSTIVE_DRAW, ABORT_4_WINDS, ABORT_5_KAN, ABORT_RON;
+		DRAW_FROM_LIVE_WALL, DRAW_FROM_DEAD_WALL, DISCARD, DECLARE_RIICHI, DECLARE_BONUS_TILE, ABORT_KYUUSHU_KYUUHAI, DECLARE_TSUMO, DECLARE_KAN, CALL_PON, CALL_CHII, CALL_RON, CALL_KAN, SKIP_CALL, CALL_AVAILABLE, TURN_STARTED, TURN_FINISHED, ABORT_ALL_RIICHI, ABORT_4_KAN, ABORT_CHOMBO, EXHAUSTIVE_DRAW, ABORT_4_WINDS, ABORT_5_KAN, ABORT_RON, PLAYER_CONNECTED, ROUND_STARTED;
 
 		/**
 		 * Returns true if the event requires it to be the player's turn.
@@ -60,7 +60,7 @@ public class GameEvent extends EventObject {
 	 * @param source
 	 *            the {@link Player} that triggered the event. If this value is
 	 *            null, this typically means that the source of the event was
-	 *            the {@link GameManager}.
+	 *            the {@link GameManager}. // TODO
 	 * @param eventType
 	 *            the {@link GameEventType} of the event
 	 * @param eventData

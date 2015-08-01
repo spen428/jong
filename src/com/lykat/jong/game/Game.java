@@ -18,11 +18,12 @@ public class Game {
 	private int turn;
 	private int turnCounter;
 	private boolean fourWindsAbort;
+	private boolean deadDraw;
 
-	public Game(String name, RuleSet ruleSet, Player... players) {
+	public Game(String name, RuleSet ruleSet) {
 		this.name = name;
 		this.ruleSet = ruleSet;
-		this.players = players;
+		this.players = new Player[ruleSet.getNumPlayers()];
 		this.wall = new Wall(ruleSet.getTileSet(),
 				ruleSet.getNumDeadWallDraws());
 		this.round = new Round();
@@ -30,6 +31,7 @@ public class Game {
 		this.turn = 0;
 		this.turnCounter = 0;
 		this.fourWindsAbort = ruleSet.isFourWindsAbort();
+		this.deadDraw = false;
 	}
 
 	/**
@@ -88,6 +90,17 @@ public class Game {
 
 	public Player[] getPlayers() {
 		return players;
+	}
+
+	boolean newPlayer(String name) {
+		for (int i = 0; i < players.length; i++) {
+			if (players[i] == null) {
+				players[i] = new Player(name);
+				players[i].addPoints(ruleSet.getStartingPoints());
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public Round getRound() {
@@ -336,4 +349,23 @@ public class Game {
 		}
 		return inTurn;
 	}
+
+	void resetFourWindsAbort() {
+		this.fourWindsAbort = ruleSet.isFourWindsAbort();
+	}
+
+	public boolean isDeadDraw() {
+		return deadDraw;
+	}
+
+	void setDeadDraw(boolean deadDraw) {
+		this.deadDraw = deadDraw;
+	}
+
+	void interruptPlayers() {
+		for (Player p : players) {
+			p.setInterrupted(true);
+		}
+	}
+
 }

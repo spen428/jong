@@ -6,7 +6,7 @@ import com.lykat.jong.game.GameEvent.GameEventType;
 import com.lykat.jong.game.Meld.MeldType;
 
 public class Call {
-	
+
 	public enum CallType {
 		RON, PON, CHII, KAN;
 	}

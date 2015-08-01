@@ -1,15 +1,19 @@
 package com.lykat.jong.control;
 
 import java.util.EventListener;
+import java.util.Observable;
 
+import com.badlogic.gdx.InputProcessor;
 import com.lykat.jong.game.GameEvent;
 import com.lykat.jong.game.GameManager;
 import com.lykat.jong.game.Player;
 import com.lykat.jong.game.GameEvent.GameEventType;
 
-public abstract class AbstractPlayerController implements EventListener {
+public abstract class AbstractPlayerController extends Observable implements
+		EventListener, InputProcessor {
 
-	protected final Player player;
+	protected Player player;
+	protected final String name;
 	protected final GameManager gameManager;
 
 	/**
@@ -20,9 +24,9 @@ public abstract class AbstractPlayerController implements EventListener {
 	 * @param gameManager
 	 *            the game manager of the game
 	 */
-	public AbstractPlayerController(Player player, GameManager gameManager) {
+	public AbstractPlayerController(String name, GameManager gameManager) {
 		super();
-		this.player = player;
+		this.name = name;
 		this.gameManager = gameManager;
 	}
 
@@ -31,15 +35,32 @@ public abstract class AbstractPlayerController implements EventListener {
 	}
 
 	protected final void fireEvent(GameEventType eventType, Object eventData) {
-		GameEvent event = new GameEvent(player, eventType, eventData,
+		Player source = player;
+		if (source == null) {
+			source = GameManager.SERVER_PLAYER;
+		}
+
+		GameEvent event = new GameEvent(source, eventType, eventData,
 				System.currentTimeMillis());
 		gameManager.handleEvent(event);
 	}
-	
+
 	public abstract void handleEvent(GameEvent event);
+
+	public String getName() {
+		return name;
+	}
 
 	public Player getPlayer() {
 		return player;
+	}
+
+	public boolean setPlayer(Player player) {
+		if (this.player == null) {
+			this.player = player;
+			return true;
+		}
+		return false;
 	}
 
 	/* Controls */

@@ -4,25 +4,26 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.badlogic.gdx.Input.Keys;
-import com.lykat.jong.game.Call;
 import com.lykat.jong.game.GameEvent;
 import com.lykat.jong.game.GameEvent.GameEventType;
 import com.lykat.jong.game.GameManager;
 import com.lykat.jong.game.GameManager.GameState;
-import com.lykat.jong.game.Player;
 
-public class PlayerController extends AbstractPlayerController {
+public class TsumokiriAI extends AbstractPlayerController {
 
-	public static final Logger LOGGER = Logger.getLogger("PlayerController");
+	public static final Logger LOGGER = Logger.getLogger("AI");
 
-	public PlayerController(String name, GameManager gameManager) {
+	public TsumokiriAI(String name, GameManager gameManager) {
 		super(name, gameManager);
+	}
+	
+	public void connect() {
+		super.fireEvent(GameEventType.PLAYER_CONNECTED, this);
 	}
 
 	@Override
 	public void handleEvent(GameEvent event) {
-		super.setChanged();
-		
+		super.hasChanged();
 		GameEventType type = event.getEventType();
 		Object data = event.getEventData();
 
@@ -33,28 +34,11 @@ public class PlayerController extends AbstractPlayerController {
 					super.fireEvent(GameEventType.DRAW_FROM_LIVE_WALL);
 				} else if (state == GameState.MUST_DRAW_DEAD) {
 					super.fireEvent(GameEventType.DRAW_FROM_DEAD_WALL);
-				} else if (state == GameState.MUST_DISCARD) {
-					LOGGER.log(Level.INFO, "You must now discard a tile.");
-				} else if (state == GameState.WAITING) {
-					LOGGER.log(Level.INFO, "It is now your turn.");
 				}
+				super.tsumoKiri();
 			}
-		} else if (data instanceof Player) {
-			/* Notification of player action */
-			Player player = (Player) data;
-			LOGGER.log(
-					Level.FINE,
-					String.format("%d: Player %s did %s%n",
-							event.getTimeStamp(), player.getName(),
-							type.toString()));
-		} else if (data instanceof Call) {
-			/* Available meld call */
-			Call call = (Call) data;
-			// TODO: Handle call event
-		} else {
-			LOGGER.log(Level.FINER, "Received GameEvent: " + type.toString());
 		}
-		
+
 		super.notifyObservers();
 	}
 

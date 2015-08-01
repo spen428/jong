@@ -9,7 +9,8 @@ public class RuleSet {
 	}
 
 	private final GameType gameType;
-	private final int numPlayers, numDeadWallDraws, maxSimultanousRon;
+	private final int numPlayers, numDeadWallDraws, maxSimultanousRon,
+			startingPoints;
 	private final boolean buttobiEnds, fourWindsAbort, allRiichiAbort,
 			fourKanAbort;
 
@@ -33,6 +34,7 @@ public class RuleSet {
 			this.fourKanAbort = false;
 			this.fourWindsAbort = false;
 			this.allRiichiAbort = false;
+			this.startingPoints = 50000;
 			break;
 		case WASHIZU_FOUR_PLAYER:
 			this.maxSimultanousRon = 1;
@@ -41,6 +43,7 @@ public class RuleSet {
 			this.fourKanAbort = true;
 			this.fourWindsAbort = true;
 			this.allRiichiAbort = true;
+			this.startingPoints = 100000;
 			break;
 		case RIICHI_FOUR_PLAYER:
 			this.numDeadWallDraws = 4;
@@ -49,6 +52,7 @@ public class RuleSet {
 			this.fourKanAbort = true;
 			this.fourWindsAbort = true;
 			this.allRiichiAbort = true;
+			this.startingPoints = 25000;
 			break;
 		case RIICHI_THREE_PLAYER:
 			this.numDeadWallDraws = 8;
@@ -57,6 +61,7 @@ public class RuleSet {
 			this.fourKanAbort = false;
 			this.fourWindsAbort = false;
 			this.allRiichiAbort = false;
+			this.startingPoints = 35000;
 			break;
 		default:
 			this.numDeadWallDraws = 0;
@@ -65,6 +70,7 @@ public class RuleSet {
 			this.fourKanAbort = false;
 			this.fourWindsAbort = false;
 			this.allRiichiAbort = false;
+			this.startingPoints = 0;
 			break;
 		}
 	}
@@ -118,6 +124,10 @@ public class RuleSet {
 
 	public boolean isFourKanAbort() {
 		return fourKanAbort;
+	}
+
+	public int getStartingPoints() {
+		return startingPoints;
 	}
 
 }

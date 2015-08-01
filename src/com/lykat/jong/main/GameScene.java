@@ -157,6 +157,11 @@ public class GameScene implements ApplicationListener {
 		/* Hands */
 		for (int p = 0; p < players.length; p++) {
 			Player player = players[p];
+			if (player == null) {
+				System.out.println("skipping player " + p);
+				continue;
+			}
+
 			int numHandTiles = player.getHand().size();
 			float halfWidth = ((numHandTiles * (tileWG)) - TILE_GAP_MM) / 2;
 

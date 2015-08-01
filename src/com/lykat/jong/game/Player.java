@@ -26,6 +26,7 @@ public class Player {
 	protected int points;
 	private TileValue seatWind;
 	protected boolean madeCall;
+	protected boolean interrupted;
 
 	public Player(String name) {
 		super();
@@ -43,6 +44,7 @@ public class Player {
 		this.points = 0;
 		this.seatWind = null;
 		this.madeCall = false;
+		this.interrupted = false;
 	}
 
 	/**
@@ -141,6 +143,7 @@ public class Player {
 	 */
 	void nextRound() {
 		riichi = false;
+		interrupted = false;
 		hand.clear();
 		melds.clear();
 		discards.clear();
@@ -186,6 +189,7 @@ public class Player {
 		if (!isRiichi() && getPoints() >= 1000) {
 			removePoints(1000);
 			riichi = true;
+			interrupted = false;
 			return true;
 		}
 		return false;
@@ -217,6 +221,14 @@ public class Player {
 
 	void setSeatWind(TileValue seatWind) {
 		this.seatWind = seatWind;
+	}
+
+	public boolean isInterrupted() {
+		return interrupted;
+	}
+
+	void setInterrupted(boolean interrupted) {
+		this.interrupted = interrupted;
 	}
 
 	public String getName() {
