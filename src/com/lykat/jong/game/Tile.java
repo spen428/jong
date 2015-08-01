@@ -116,4 +116,12 @@ public class Tile {
 		return false;
 	}
 
+	public boolean isWind() {
+		return this.value.isWind();
+	}
+	
+	public boolean isDragon() {
+		return this.value.isDragon();
+	}
+
 }

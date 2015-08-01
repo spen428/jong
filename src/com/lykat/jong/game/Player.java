@@ -300,6 +300,7 @@ public class Player {
 					MeldType.KANTSU_EXTENDED);
 			melds.remove(oldMeld);
 			melds.add(index, newMeld);
+			// TODO : replce with Meld.extend()
 		}
 	}
 
@@ -309,6 +310,34 @@ public class Player {
 
 	public void removeLatestDiscard() {
 		discards.remove(getLatestDiscard());
+	}
+
+	/**
+	 * Declare the given tile as a bonus tile, removing it from play and adding
+	 * it to the player's "bonus" meld if it exists (creating it if it doesn't).
+	 * 
+	 * @param tile
+	 *            the tile to declare
+	 */
+	public void declareBonusTile(Tile tile) {
+		if (tile.getValue() == TileValue.PEI) {
+			Meld bonusMeld = null;
+			for (Meld m : melds) {
+				if (m.getType() == MeldType.BONUS_NORTH) {
+					bonusMeld = m;
+					break;
+				}
+			}
+			if (bonusMeld == null) {
+				bonusMeld = new Meld(new Tile[] { tile }, MeldType.BONUS_NORTH);
+				melds.add(bonusMeld);
+			} else {
+				bonusMeld.extend(tile);
+			}
+		} else {
+			throw new IllegalStateException("Cannot declare as bonus tile: "
+					+ tile.toString());
+		}
 	}
 
 }

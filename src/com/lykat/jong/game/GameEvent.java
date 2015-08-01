@@ -5,7 +5,7 @@ import java.util.EventObject;
 public class GameEvent extends EventObject {
 
 	public enum GameEventType {
-		DRAW_FROM_LIVE_WALL, DRAW_FROM_DEAD_WALL, DISCARD, DECLARE_RIICHI, DECLARE_BONUS_TILE, DECLARE_REDEAL, DECLARE_TSUMO, DECLARE_KAN, CALL_PON, CALL_CHII, CALL_RON, CALL_KAN, SKIP_CALL, CALL_AVAILABLE, TURN_STARTED, TURN_FINISHED;
+		DRAW_FROM_LIVE_WALL, DRAW_FROM_DEAD_WALL, DISCARD, DECLARE_RIICHI, DECLARE_BONUS_TILE, ABORT_KYUUSHU_KYUUHAI, DECLARE_TSUMO, DECLARE_KAN, CALL_PON, CALL_CHII, CALL_RON, CALL_KAN, SKIP_CALL, CALL_AVAILABLE, TURN_STARTED, TURN_FINISHED, ABORT_ALL_RIICHI, ABORT_4_KAN, ABORT_CHOMBO, EXHAUSTIVE_DRAW, ABORT_4_WINDS, ABORT_5_KAN, ABORT_RON;
 
 		/**
 		 * Returns true if the event requires it to be the player's turn.
@@ -14,7 +14,7 @@ public class GameEvent extends EventObject {
 			switch (this) {
 			case DECLARE_BONUS_TILE:
 			case DECLARE_KAN:
-			case DECLARE_REDEAL:
+			case ABORT_KYUUSHU_KYUUHAI:
 			case DECLARE_RIICHI:
 			case DECLARE_TSUMO:
 			case DISCARD:
@@ -36,6 +36,13 @@ public class GameEvent extends EventObject {
 			case CALL_PON:
 			case CALL_RON:
 				return true;
+			default:
+				return false;
+			}
+		}
+
+		public boolean isAbort() {
+			switch (this) {
 			default:
 				return false;
 			}

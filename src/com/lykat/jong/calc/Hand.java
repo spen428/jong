@@ -234,4 +234,9 @@ public class Hand {
 		return melds;
 	}
 
+	public static boolean isKyuushuKyuuhai(ArrayList<Tile> hand, Tile tsumoHai) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 }

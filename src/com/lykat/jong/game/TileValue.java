@@ -52,4 +52,27 @@ public enum TileValue {
 		return this.value;
 	}
 
+	public boolean isDragon() {
+		switch (this) {
+		case CHUN:
+		case HAKU:
+		case HATSU:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	public boolean isWind() {
+		switch (this) {
+		case TON:
+		case NAN:
+		case SHAA:
+		case PEI:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 }

@@ -11,45 +11,8 @@ import com.lykat.jong.game.Meld.MeldType;
 
 public class GameManager implements EventListener {
 
-	private enum GameState {
-		MUST_DRAW_LIVE, MUST_DRAW_DEAD, MUST_DISCARD, WAITING, WAITING_FOR_CALLERS, END_OF_ROUND, EXTENDED_KAN_DECLARED, CLOSED_KAN_DECLARED, BONUS_TILE_DECLARED;
-	}
-
-	private class Call {
-		private final Player player;
-		private final CallType callType;
-		private final Meld meld;
-
-		public Call(Player player, CallType callType, Meld meld) {
-			this.player = player;
-			this.callType = callType;
-			this.meld = meld;
-
-			if (meld == null && callType != CallType.RON) {
-				throw new IllegalArgumentException(
-						"Cannot have a null meld unless the CallType is Ron.");
-			}
-		}
-
-		public Call(Player player, CallType callType) {
-			this(player, callType, null);
-		}
-
-		public Player getPlayer() {
-			return player;
-		}
-
-		public CallType getCallType() {
-			return callType;
-		}
-
-		public Meld getMeld() {
-			return meld;
-		}
-	}
-
-	private enum CallType {
-		RON, PON, CHII, KAN;
+	public enum GameState {
+		MUST_DRAW_LIVE, MUST_DRAW_DEAD, MUST_DISCARD, WAITING, WAITING_FOR_CALLERS, END_OF_ROUND, EXTENDED_KAN_DECLARED, CLOSED_KAN_DECLARED, BONUS_TILE_DECLARED, GAME_OVER;
 	}
 
 	private int toFlip;
@@ -59,7 +22,6 @@ public class GameManager implements EventListener {
 
 	private final Game game;
 	private final AbstractPlayerController[] players;
-	private Call c;
 
 	public GameManager(Game game, AbstractPlayerController[] players) {
 		super();
@@ -67,22 +29,36 @@ public class GameManager implements EventListener {
 		this.players = players;
 		this.toFlip = 0;
 		this.deadDraw = false;
-		this.gameState = GameState.MUST_DRAW_LIVE;
+		this.gameState = GameState.END_OF_ROUND;
 		this.canCall = new ArrayList<Call>();
 		this.called = new ArrayList<Call>();
 	}
 
-	private boolean fireEvent(Player target, GameEventType eventType,
+	private void fireEventAllPlayers(GameEventType eventType, Object eventData) {
+		for (AbstractPlayerController player : players) {
+			fireEvent(player, eventType, eventData);
+		}
+	}
+
+	private void fireEvent(Player target, GameEventType eventType,
 			Object eventData) {
+		fireEvent(getPlayerController(target), eventType, eventData);
+	}
+
+	private void fireEvent(AbstractPlayerController target,
+			GameEventType eventType, Object eventData) {
+		GameEvent event = new GameEvent(null, eventType, eventData,
+				System.currentTimeMillis());
+		target.handleEvent(event);
+	}
+
+	private AbstractPlayerController getPlayerController(Player player) {
 		for (AbstractPlayerController p : players) {
-			if (p.getPlayer() == target) {
-				GameEvent event = new GameEvent(null, eventType, eventData,
-						System.currentTimeMillis());
-				p.handleEvent(event);
-				return true;
+			if (p.getPlayer() == player) {
+				return p;
 			}
 		}
-		return false;
+		return null;
 	}
 
 	public void handleEvent(GameEvent event) {
@@ -109,11 +85,13 @@ public class GameManager implements EventListener {
 				player.deal(game.getWall().deadWallDraw());
 				deadDraw = true;
 				gameState = GameState.WAITING;
+				fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
 			}
 		} else if (gameState == GameState.MUST_DRAW_LIVE) {
 			if (eventType == GameEventType.DRAW_FROM_LIVE_WALL && isTurn) {
 				player.deal(game.getWall().draw());
 				gameState = GameState.WAITING;
+				fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
 			}
 		} else if (gameState == GameState.WAITING) {
 			if (isTurn) {
@@ -126,14 +104,25 @@ public class GameManager implements EventListener {
 				} else if (eventType == GameEventType.DECLARE_BONUS_TILE) {
 					declareBonusTile(event);
 				} else if (eventType == GameEventType.DECLARE_TSUMO) {
-					declareTsumo(event);
-				} else if (eventType == GameEventType.DECLARE_REDEAL) {
+					declareTsumo(event.getSource());
+				} else if (eventType == GameEventType.ABORT_KYUUSHU_KYUUHAI) {
 					declareRedeal(event);
 				}
 			}
 		} else if (gameState == GameState.END_OF_ROUND) {
 			// TODO: Players must click to proceed.
+
+			/* Set up */
+			Wall wall = game.getWall();
+			wall.reset();
+			for (Player p : game.getPlayers()) {
+				p.nextRound();
+				p.deal(wall.haipai());
+			}
+			gameState = GameState.MUST_DRAW_LIVE;
+			fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
 		} else {
+			System.err.printf("Unhandled event: %s%n", eventType.toString());
 		}
 	}
 
@@ -169,18 +158,22 @@ public class GameManager implements EventListener {
 		Player source = event.getSource();
 		for (Call c : new ArrayList<Call>(canCall)) {
 			if (c.getPlayer() == source) {
-				CallType type = c.getCallType();
-				if ((type == CallType.CHII && eventType == GameEventType.CALL_CHII)
-						|| (type == CallType.KAN && eventType == GameEventType.CALL_KAN)
-						|| (type == CallType.PON && eventType == GameEventType.CALL_PON)
-						|| (type == CallType.RON && eventType == GameEventType.CALL_RON)) {
-					// Man, this is ugly
+				if (eventType == c.getCallEvent()) {
 					canCall.remove(c);
 					called.add(c);
 					break;
 				}
 			}
 		}
+	}
+
+	private boolean containsPlayer(ArrayList<Call> callArray, Player player) {
+		for (Call c : callArray) {
+			if (c.getPlayer() == player) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -192,10 +185,11 @@ public class GameManager implements EventListener {
 			/* Count */
 			int ron = 0, ponKan = 0;
 			for (Call c : called) {
-				CallType type = c.getCallType();
-				if (type == CallType.KAN || type == CallType.PON) {
+				GameEventType type = c.getCallEvent();
+				if (type == GameEventType.CALL_KAN
+						|| type == GameEventType.CALL_PON) {
 					ponKan++;
-				} else if (type == CallType.RON) {
+				} else if (type == GameEventType.CALL_RON) {
 					ron++;
 				}
 			}
@@ -206,9 +200,9 @@ public class GameManager implements EventListener {
 			boolean removePonKan = (ron > 0);
 			boolean removeChii = (ponKan > 0);
 			for (Call c : callz) {
-				CallType type = c.getCallType();
-				if (((type == CallType.KAN || type == CallType.PON) && removePonKan)
-						|| (type == CallType.CHII && removeChii)) {
+				GameEventType type = c.getCallEvent();
+				if (((type == GameEventType.CALL_KAN || type == GameEventType.CALL_PON) && removePonKan)
+						|| (type == GameEventType.CALL_CHII && removeChii)) {
 					canCall.remove(c);
 					called.remove(c);
 				}
@@ -231,9 +225,11 @@ public class GameManager implements EventListener {
 					|| gameState == GameState.CLOSED_KAN_DECLARED
 					|| gameState == GameState.EXTENDED_KAN_DECLARED) {
 				gameState = GameState.MUST_DRAW_DEAD;
+				fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
 			} else if (gameState == GameState.WAITING_FOR_CALLERS) {
 				game.nextTurn();
 				gameState = GameState.MUST_DRAW_LIVE;
+				fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
 			}
 		}
 	}
@@ -247,26 +243,57 @@ public class GameManager implements EventListener {
 
 		discarder.removeLatestDiscard();
 		caller.addMeld(call.getMeld());
+
+		fireEvent(discarder, GameEventType.TURN_FINISHED, null);
 		game.setTurn(caller);
 
-		if (call.getCallType() == CallType.KAN) {
+		if (call.getCallEvent() == GameEventType.CALL_KAN) {
+			if (game.isMaxKan()
+					&& game.getWall().getNumRemainingDeadWallDraws() == 0) {
+				gameState = GameState.END_OF_ROUND;
+				fireEventAllPlayers(GameEventType.ABORT_5_KAN, null);
+				return;
+			}
 			toFlip++;
 			// TODO: Kan Pao
 			gameState = GameState.MUST_DRAW_DEAD;
 		} else {
 			gameState = GameState.MUST_DISCARD;
 		}
+
+		fireEvent(caller, GameEventType.TURN_STARTED, gameState);
 	}
 
-	private void declareRon(GameEvent event) {
+	private void declareRon(Player winner, boolean changeGameState) {
 		// TODO
-		boolean houtei = false;
-		boolean chankan = false;
-		if (gameState == GameState.EXTENDED_KAN_DECLARED
-				|| gameState == GameState.CLOSED_KAN_DECLARED) {
-			chankan = true;
+		boolean isDealer = (winner == game.getDealer());
+		boolean houtei = (game.getWall().getNumRemainingDraws() == 0);
+		boolean chankan = (gameState == GameState.EXTENDED_KAN_DECLARED || gameState == GameState.CLOSED_KAN_DECLARED);
+
+		int payment = -1;
+		// TODO: Calculate ron payment
+
+		fireEventAllPlayers(GameEventType.CALL_RON, winner);
+
+		if (changeGameState) {
+			boolean buttobi = game.ron(winner, game.getTurn(), payment);
+			if (buttobi && game.getRuleSet().isButtobiEnds()) {
+				gameState = GameState.GAME_OVER;
+			} else {
+				if (isDealer) {
+					game.incrementBonusCounter();
+					gameState = GameState.END_OF_ROUND;
+				} else {
+					game.resetBonusCounter();
+					if (game.rotateDealers()) {
+						/* Round wind changed, check for end condition */
+						// TODO: Bonus round winds
+						// gameState = GameState.GAME_OVER;
+						gameState = GameState.END_OF_ROUND;
+					}
+				}
+			}
 		}
-		throw new UnsupportedOperationException("Unimplemented");
 	}
 
 	/**
@@ -277,43 +304,82 @@ public class GameManager implements EventListener {
 		RuleSet ruleSet = game.getRuleSet();
 		if (called.size() > ruleSet.getMaxSimultanousRon()) {
 			if (ruleSet.isHeadBump()) {
-				// TODO: Head bump
-				throw new UnsupportedOperationException("Unimplemented");
+				/* Closest to discarder in turn wins */
+				Player winner = null;
+				Player[] inTurn = game.getPlayersInTurnStartingAt(game
+						.getTurn());
+				for (int i = 1; i < inTurn.length; i++) {
+					if (containsPlayer(called, inTurn[i])) {
+						winner = inTurn[i];
+						break;
+					}
+				}
+				if (winner != null) {
+					declareRon(winner, true);
+				}
 			} else {
-				// TODO: Multi-ron abort
-				throw new UnsupportedOperationException("Unimplemented");
+				game.incrementBonusCounter();
+				gameState = GameState.END_OF_ROUND;
+				fireEventAllPlayers(GameEventType.ABORT_RON, null);
 			}
 		} else {
-			// TODO: Multi-ron
-			throw new UnsupportedOperationException("Unimplemented");
+			/* Multi-ron: Dealer ron is processed last. */
+			Player dealer = game.getDealer();
+			if (containsPlayer(called, dealer)) {
+				for (Call c : called) {
+					Player winner = c.getPlayer();
+					if (winner != dealer) {
+						declareRon(winner, false);
+					}
+				}
+				declareRon(dealer, true);
+			} else {
+				int numCallers = called.size();
+				for (int i = 0; i < numCallers; i++) {
+					boolean last = (i == numCallers - 1);
+					declareRon(called.get(i).getPlayer(), last);
+				}
+			}
 		}
 	}
 
-	private void declareTsumo(GameEvent event) {
+	private void declareTsumo(Player winner) {
 		// TODO
 		boolean haitei = false;
 		boolean rinshan = deadDraw;
-		throw new UnsupportedOperationException("Unimplemented");
+		gameState = GameState.END_OF_ROUND;
+		fireEventAllPlayers(GameEventType.DECLARE_TSUMO, winner);
 	}
 
 	private void declareBonusTile(GameEvent event) {
-		// TODO
+		Player player = event.getSource();
+		Tile tile = (Tile) event.getEventData();
+		player.declareBonusTile(tile);
 		gameState = GameState.BONUS_TILE_DECLARED;
+		fireEventAllPlayers(GameEventType.DECLARE_BONUS_TILE, player);
 		if (!hasCallers(event)) {
 			gameState = GameState.MUST_DRAW_DEAD;
+			fireEvent(player, GameEventType.TURN_STARTED, gameState);
 		}
-		throw new UnsupportedOperationException("Unimplemented");
 	}
 
 	private void declareRedeal(GameEvent event) {
-		// TODO Auto-generated method stub
-
+		Player player = event.getSource();
+		if (game.getTurn() == player
+				&& game.isFirstGoAround()
+				&& Hand.isKyuushuKyuuhai(player.getHand(), player.getTsumoHai())) {
+			game.incrementBonusCounter();
+			gameState = GameState.END_OF_ROUND;
+			fireEventAllPlayers(GameEventType.ABORT_KYUUSHU_KYUUHAI, null);
+		}
 	}
 
 	private void declareRiichi(GameEvent event) {
-		if (event.getSource().declareRiichi()) {
+		Player player = event.getSource();
+		if (player.declareRiichi()) {
 			game.incrementNumRiichiSticks();
 			gameState = GameState.MUST_DISCARD;
+			fireEvent(player, GameEventType.TURN_STARTED, gameState);
 		}
 	}
 
@@ -335,33 +401,62 @@ public class GameManager implements EventListener {
 		}
 		gameState = GameState.WAITING_FOR_CALLERS;
 		if (!hasCallers(event)) {
+			fireEvent(player, GameEventType.TURN_FINISHED, null);
+			RuleSet rs = game.getRuleSet();
 			if (game.getWall().getNumRemainingDraws() == 0) {
-				// TODO: Exhaustive draw
-				// TODO: 4 Winds abortive draw
-				// TODO: 4/5 Kan abortive draw
-				// TODO: 4 Riichi abortive draw
+				gameState = GameState.END_OF_ROUND;
+				fireEventAllPlayers(GameEventType.EXHAUSTIVE_DRAW, null);
+			} else if (rs.isAllRiichiAbort()
+					&& game.getNumPlayersRiichi() == game.getPlayers().length) {
+				gameState = GameState.END_OF_ROUND;
+				fireEventAllPlayers(GameEventType.ABORT_ALL_RIICHI, null);
+			} else if (game.isFourWindsAbort()) {
+				Tile discard = player.getLatestDiscard();
+				Tile first = game.getFirstDiscard();
+				if (!discard.equals(first) || !discard.isWind()
+						|| !game.isFirstGoAround()) {
+					game.setFourWindsAbort(false);
+				}
+				if (game.getTurnCounter() == 3) {
+					gameState = GameState.END_OF_ROUND;
+					fireEventAllPlayers(GameEventType.ABORT_4_WINDS, null);
+				}
+			} else if (rs.isFourKanAbort() && game.isMaxKan()) {
+				gameState = GameState.END_OF_ROUND;
+				fireEventAllPlayers(GameEventType.ABORT_4_KAN, null);
 			} else {
 				game.nextTurn();
 				gameState = GameState.MUST_DRAW_LIVE;
+				fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
 			}
 		}
 	}
 
 	private void declareKan(GameEvent event) {
+		if (game.isMaxKan()) {
+			// TODO: 4 kan abort
+			return;
+		}
+
 		Meld meld = (Meld) event.getEventData();
+		Player player = event.getSource();
 		if (meld.getType() == MeldType.KANTSU_CLOSED) {
-			event.getSource().addMeld(meld);
+			player.addMeld(meld);
 			game.getWall().flipDora();
 			gameState = GameState.CLOSED_KAN_DECLARED;
+			fireEventAllPlayers(GameEventType.DECLARE_KAN, player);
 			if (!hasCallers(event)) {
 				gameState = GameState.MUST_DRAW_DEAD;
+				fireEvent(player, GameEventType.TURN_STARTED, gameState);
 			}
 		} else if (meld.getType() == MeldType.KANTSU_EXTENDED) {
-			event.getSource().addMeld(meld);
+			player.addMeld(meld);
 			toFlip++;
 			gameState = GameState.EXTENDED_KAN_DECLARED;
+			fireEventAllPlayers(GameEventType.DECLARE_KAN, player);
 			if (!hasCallers(event)) {
 				gameState = GameState.MUST_DRAW_DEAD;
+				fireEvent(player, GameEventType.TURN_STARTED, gameState);
 			}
 		}
 	}
@@ -380,24 +475,24 @@ public class GameManager implements EventListener {
 		canCall.clear();
 		Player discarder = event.getSource();
 		Tile tile = discarder.getLatestDiscard();
-		for (Player p : game.getPlayers()) {
+		for (Player player : game.getPlayers()) {
 
-			if (game.getTurn() == p) {
+			if (game.getTurn() == player) {
 				continue;
 			}
 
-			ArrayList<Tile> hand = p.getHand();
-			ArrayList<Meld> melds = p.getMelds();
+			ArrayList<Tile> hand = player.getHand();
+			ArrayList<Meld> melds = player.getMelds();
 
 			/* Chii/Pon/Kan calls */
 			ArrayList<Meld> callableMelds = Hand.getCallableMelds(hand, tile);
-			for(Meld m : callableMelds) {
-				// TODO
+			for (Meld meld : callableMelds) {
+				addCall(new Call(player, meld));
 			}
 
 			/* Ron calls */
 			if (Hand.getWaits(hand, melds).contains(tile)) {
-				Call ronCall = new Call(p, CallType.RON);
+				Call ronCall = new Call(player, GameEventType.CALL_RON);
 				if (gameState == GameState.BONUS_TILE_DECLARED
 						|| gameState == GameState.EXTENDED_KAN_DECLARED
 						|| gameState == GameState.WAITING_FOR_CALLERS) {
@@ -408,6 +503,13 @@ public class GameManager implements EventListener {
 							|| yaku.contains(Yaku.KOKUSHI_MUSOU_13_MAN_MACHI)) {
 						addCall(ronCall);
 					}
+				}
+			}
+
+			/* Notify player */
+			for (Call c : canCall) {
+				if (c.getPlayer() == player) {
+					fireEvent(player, c.getCallEvent(), c);
 				}
 			}
 

@@ -213,4 +213,16 @@ public class Wall {
 		return tileSet;
 	}
 
+	/**
+	 * Returns 13 random tiles from the wall, to be dealt to a Player as their
+	 * starting hand (haipai).
+	 */
+	public Tile[] haipai() {
+		Tile[] tiles = new Tile[13];
+		for (int i = 0; i < tiles.length; i++) {
+			tiles[i] = this.draw();
+		}
+		return tiles;
+	}
+
 }

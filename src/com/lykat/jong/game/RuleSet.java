@@ -1,7 +1,7 @@
 package com.lykat.jong.game;
 
 public class RuleSet {
-	
+
 	// TODO: Builder class
 
 	public enum GameType {
@@ -9,10 +9,9 @@ public class RuleSet {
 	}
 
 	private final GameType gameType;
-	private final int numPlayers;
-	private final int numDeadWallDraws;
-	private final int maxSimultanousRon;
-	private final boolean headBump;
+	private final int numPlayers, numDeadWallDraws, maxSimultanousRon;
+	private final boolean buttobiEnds, fourWindsAbort, allRiichiAbort,
+			fourKanAbort;
 
 	public RuleSet(GameType gameType) {
 		super();
@@ -23,6 +22,7 @@ public class RuleSet {
 		}
 
 		this.gameType = gameType;
+		this.buttobiEnds = true;
 
 		switch (gameType) {
 		case MINEFIELD_TWO_PLAYER:
@@ -30,31 +30,41 @@ public class RuleSet {
 			this.numDeadWallDraws = 4;
 			this.numPlayers = 2;
 			this.maxSimultanousRon = 1;
-			this.headBump = false;
+			this.fourKanAbort = false;
+			this.fourWindsAbort = false;
+			this.allRiichiAbort = false;
 			break;
 		case WASHIZU_FOUR_PLAYER:
 			this.maxSimultanousRon = 1;
 			this.numDeadWallDraws = 4;
 			this.numPlayers = 4;
-			this.headBump = true;
+			this.fourKanAbort = true;
+			this.fourWindsAbort = true;
+			this.allRiichiAbort = true;
 			break;
 		case RIICHI_FOUR_PLAYER:
 			this.numDeadWallDraws = 4;
 			this.numPlayers = 4;
 			this.maxSimultanousRon = 2;
-			this.headBump = false;
+			this.fourKanAbort = true;
+			this.fourWindsAbort = true;
+			this.allRiichiAbort = true;
 			break;
 		case RIICHI_THREE_PLAYER:
 			this.numDeadWallDraws = 8;
 			this.numPlayers = 3;
 			this.maxSimultanousRon = 2;
-			this.headBump = false;
+			this.fourKanAbort = false;
+			this.fourWindsAbort = false;
+			this.allRiichiAbort = false;
 			break;
 		default:
 			this.numDeadWallDraws = 0;
 			this.numPlayers = 0;
 			this.maxSimultanousRon = 0;
-			this.headBump = false;
+			this.fourKanAbort = false;
+			this.fourWindsAbort = false;
+			this.allRiichiAbort = false;
 			break;
 		}
 	}
@@ -91,7 +101,23 @@ public class RuleSet {
 	}
 
 	public boolean isHeadBump() {
-		return headBump;
+		return (maxSimultanousRon == 1);
+	}
+
+	public boolean isButtobiEnds() {
+		return buttobiEnds;
+	}
+
+	public boolean isFourWindsAbort() {
+		return fourWindsAbort;
+	}
+
+	public boolean isAllRiichiAbort() {
+		return allRiichiAbort;
+	}
+
+	public boolean isFourKanAbort() {
+		return fourKanAbort;
 	}
 
 }

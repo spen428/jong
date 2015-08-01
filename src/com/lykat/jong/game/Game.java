@@ -1,6 +1,5 @@
 package com.lykat.jong.game;
 
-
 /**
  * Represents a game of Mahjong. Responsible for distributing tiles to players
  * and handling tile calls.
@@ -10,59 +9,6 @@ package com.lykat.jong.game;
  */
 public class Game {
 
-	private class Round {
-		private TileValue roundWind;
-		private int round;
-		private int bonus;
-
-		public Round() {
-			this.roundWind = TileValue.TON;
-			this.round = 1;
-			this.bonus = 0;
-		}
-
-		@Override
-		public String toString() {
-			StringBuilder sb = new StringBuilder(roundWind.toString());
-			sb.append(" ");
-			sb.append(round);
-			if (bonus > 0) {
-				sb.append("Bonus ");
-				sb.append(bonus);
-			}
-			return sb.toString();
-		}
-
-		public TileValue getRoundWind() {
-			return roundWind;
-		}
-
-		void setRoundWind(TileValue roundWind) {
-			this.roundWind = roundWind;
-		}
-
-		public int getRound() {
-			return round;
-		}
-
-		public int getBonus() {
-			return bonus;
-		}
-
-		public void incrementRound() {
-			round++;
-		}
-
-		public void incrementBonus() {
-			bonus++;
-		}
-
-		public void resetBonus() {
-			bonus = 0;
-		}
-
-	}
-
 	private final String name;
 	private final RuleSet ruleSet;
 	private final Wall wall;
@@ -70,6 +16,8 @@ public class Game {
 	private final Round round;
 	private int numRiichiSticks;
 	private int turn;
+	private int turnCounter;
+	private boolean fourWindsAbort;
 
 	public Game(String name, RuleSet ruleSet, Player... players) {
 		this.name = name;
@@ -80,6 +28,8 @@ public class Game {
 		this.round = new Round();
 		this.numRiichiSticks = 0;
 		this.turn = 0;
+		this.turnCounter = 0;
+		this.fourWindsAbort = ruleSet.isFourWindsAbort();
 	}
 
 	/**
@@ -99,7 +49,7 @@ public class Game {
 	 * @return the next wind indicator in sequence, or null if an invalid input
 	 *         was given.
 	 */
-	public TileValue nextWind(TileValue currentWind, boolean seatWind) {
+	public static TileValue nextWind(TileValue currentWind, boolean seatWind) {
 		switch (currentWind) {
 		case TON:
 			return TileValue.NAN;
@@ -152,12 +102,17 @@ public class Game {
 		numRiichiSticks++;
 	}
 
-	void decrementNumRiichiSticks() {
-		numRiichiSticks--;
-	}
-
 	public Player getTurn() {
 		return players[turn];
+	}
+
+	public Player getDealer() {
+		for (Player p : players) {
+			if (p.getSeatWind() == TileValue.TON) {
+				return p;
+			}
+		}
+		return null;
 	}
 
 	public int getTurnIndex(Player player) {
@@ -180,6 +135,205 @@ public class Game {
 
 	void nextTurn() {
 		turn = (turn + 1) % players.length;
+		turnCounter++;
 	}
 
+	void tsumo(Player winner, int paymentAll) {
+		if (winner != this.getDealer()) {
+			throw new IllegalArgumentException("Can only tsumo with an 'all' "
+					+ "payment if the winner is the dealer.");
+		}
+		tsumo(winner, paymentAll, 0);
+	}
+
+	boolean tsumo(Player winner, int paymentKo, int paymentOya) {
+		int totalWinnings = 0;
+		boolean buttobi = false;
+		Player dealer = this.getDealer();
+
+		/* Apply bonus */
+		int bonusPoints = round.getBonus() * 100;
+		paymentKo += bonusPoints;
+		paymentOya += bonusPoints;
+		/* Take points */
+		for (Player p : players) {
+			if (p != winner) {
+				if (p == dealer) {
+					p.removePoints(paymentOya);
+					totalWinnings += paymentOya;
+				} else {
+					p.removePoints(paymentKo);
+					totalWinnings += paymentKo;
+				}
+			}
+			if (!buttobi && p.getPoints() < 0) {
+				buttobi = true;
+			}
+		}
+
+		/* Give winner any Riichi sticks */
+		while (numRiichiSticks > 0) {
+			totalWinnings += 1000;
+			numRiichiSticks--;
+		}
+
+		winner.addPoints(totalWinnings);
+		return buttobi;
+	}
+
+	/**
+	 * 
+	 * @param winner
+	 * @param loser
+	 * @param payment
+	 * @return true if any player dropped below 0 points
+	 */
+	boolean ron(Player winner, Player loser, int payment) {
+		int totalWinnings = 0;
+
+		/* Apply bonus and take points */
+		payment += round.getBonus() * 300;
+		loser.removePoints(payment);
+		totalWinnings += payment;
+
+		/* Give winner any Riichi sticks */
+		while (numRiichiSticks > 0) {
+			totalWinnings += 1000;
+			numRiichiSticks--;
+		}
+
+		winner.addPoints(totalWinnings);
+		return (loser.getPoints() < 0);
+	}
+
+	/**
+	 * Called to apply a chombo penalty to the given player. Returns any Riichi
+	 * payments made this round.
+	 * 
+	 * @param loser
+	 *            the player to chombo
+	 * @return true if the player dropped below 0 points
+	 */
+	boolean chombo(Player loser) {
+		Player dealer = this.getDealer();
+		int totalLosses = 0;
+
+		for (Player p : players) {
+			if (p.isRiichi()) {
+				p.addPoints(1000);
+				numRiichiSticks--;
+			}
+
+			if (p == loser) {
+				continue;
+			} else if (loser == dealer || p == dealer) {
+				p.addPoints(8000);
+				totalLosses += 8000;
+			} else {
+				p.addPoints(4000);
+				totalLosses += 4000;
+			}
+		}
+
+		loser.removePoints(totalLosses);
+		return (loser.getPoints() < 0);
+	}
+
+	/**
+	 * Returns true if it is still the first un-interrupted go-around of the
+	 * hand.
+	 */
+	public boolean isFirstGoAround() {
+		if (turnCounter < players.length) {
+			for (Player p : players) {
+				if (p.getMelds().size() > 0) {
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
+	void incrementBonusCounter() {
+		round.incrementBonus();
+	}
+
+	void resetBonusCounter() {
+		round.resetBonus();
+	}
+
+	/**
+	 * Rotate dealers, incrementing the round as necessary. Does not reset the
+	 * bonus counter, as a seat change could be because of no-ten.
+	 * 
+	 * @return Returns true if the round wind changed.
+	 */
+	boolean rotateDealers() {
+		for (Player p : players) {
+			TileValue nextWind = Game.nextWind(p.getSeatWind(), true);
+			p.setSeatWind(nextWind);
+		}
+		this.setTurn(getDealer());
+		return round.nextRound();
+	}
+
+	public int getNumPlayersRiichi() {
+		int num = 0;
+		for (Player p : players) {
+			if (p.isRiichi()) {
+				num++;
+			}
+		}
+		return num;
+	}
+
+	public boolean isFourWindsAbort() {
+		return fourWindsAbort;
+	}
+
+	void setFourWindsAbort(boolean fourWindsAbort) {
+		this.fourWindsAbort = fourWindsAbort;
+	}
+
+	public Tile getFirstDiscard() {
+		return this.getDealer().getDiscards().get(0);
+	}
+
+	public int getTurnCounter() {
+		return turnCounter;
+	}
+
+	public boolean isMaxKan() {
+		boolean onePlayerFourKan = false;
+		int totalKan = 0;
+		for (Player p : players) {
+			int playerKan = 0;
+			for (Meld m : p.getMelds()) {
+				if (m.getType().isKan()) {
+					playerKan++;
+				}
+			}
+			if (playerKan == 4) {
+				onePlayerFourKan = true;
+			}
+			totalKan += playerKan;
+		}
+
+		if (onePlayerFourKan && ruleSet.isFourKanAbort()) {
+			return (totalKan > 4);
+		} else {
+			return (totalKan > 3);
+		}
+	}
+
+	public Player[] getPlayersInTurnStartingAt(Player start) {
+		Player[] inTurn = new Player[players.length];
+		int idx = this.getTurnIndex(start);
+		for (int i = 0; i < players.length; i++) {
+			inTurn[i] = players[idx];
+			idx = (idx + 1) % players.length;
+		}
+		return inTurn;
+	}
 }

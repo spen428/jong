@@ -5,7 +5,7 @@ import com.lykat.jong.util.Sorter;
 public class Meld {
 
 	public enum MeldType {
-		SHUNTSU_OPEN, KOUTSU_OPEN, KANTSU_OPEN, KANTSU_EXTENDED, KANTSU_CLOSED, SHUNTSU_CLOSED, KOUTSU_CLOSED, TOITSU, INVALID;
+		SHUNTSU_OPEN, KOUTSU_OPEN, KANTSU_OPEN, KANTSU_EXTENDED, KANTSU_CLOSED, SHUNTSU_CLOSED, KOUTSU_CLOSED, TOITSU, INVALID, BONUS_NORTH;
 
 		public boolean isOpen() {
 			switch (this) {
@@ -13,6 +13,17 @@ public class Meld {
 			case KANTSU_OPEN:
 			case KOUTSU_OPEN:
 			case SHUNTSU_OPEN:
+				return true;
+			default:
+				return false;
+			}
+		}
+
+		public boolean isKan() {
+			switch (this) {
+			case KANTSU_EXTENDED:
+			case KANTSU_OPEN:
+			case KANTSU_CLOSED:
 				return true;
 			default:
 				return false;
@@ -127,6 +138,11 @@ public class Meld {
 
 	public MeldSource getMeldSource() {
 		return meldSource;
+	}
+
+	public void extend(Tile tile) {
+		// TODO Auto-generated method stub
+
 	}
 
 }
