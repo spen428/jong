@@ -327,6 +327,9 @@ public class GameManager implements EventListener {
 	}
 
 	private void declareRon(Player winner, boolean changeGameState) {
+		ArrayList<Yaku> yaku = Hand.getYaku(winner.getHand(),
+				winner.getMelds(), game.getTurn().getLatestDiscard());
+
 		// TODO
 		boolean isDealer = (winner == game.getDealer());
 		boolean chankan = (gameState == GameState.EXTENDED_KAN_DECLARED || gameState == GameState.CLOSED_KAN_DECLARED);
@@ -336,8 +339,7 @@ public class GameManager implements EventListener {
 		boolean riichi = winner.isRiichi();
 		boolean ippatsu = riichi && !winner.isInterrupted();
 
-		int payment = -1;
-		// TODO: Calculate ron payment
+		int payment = Hand.countFuHan(yaku);
 
 		fireEventAllPlayers(GameEventType.CALL_RON, winner);
 
@@ -351,10 +353,10 @@ public class GameManager implements EventListener {
 					gameState = GameState.END_OF_ROUND;
 				} else {
 					game.resetBonusCounter();
-					if (game.rotateDealers()) {
-						/* Round wind changed, check for end condition */
-						// TODO: Bonus round winds
-						// gameState = GameState.GAME_OVER;
+					if (game.isGameOver()) {
+						gameState = GameState.GAME_OVER;
+					} else {
+						game.rotateDealers();
 						gameState = GameState.END_OF_ROUND;
 					}
 				}
@@ -567,8 +569,8 @@ public class GameManager implements EventListener {
 					addCall(ronCall);
 				} else if (gameState == GameState.CLOSED_KAN_DECLARED) {
 					ArrayList<Yaku> yaku = Hand.getYaku(hand, melds, tile);
-					if (yaku.contains(Yaku.KOKUSHI_MUSOU)
-							|| yaku.contains(Yaku.KOKUSHI_MUSOU_13_MAN_MACHI)) {
+					if (yaku.contains(Yaku.YM_KOKUSHI_MUSOU)
+							|| yaku.contains(Yaku.YM_KOKUSHI_MUSOU_13_MAN_MACHI)) {
 						addCall(ronCall);
 					}
 				}

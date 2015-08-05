@@ -368,4 +368,38 @@ public class Game {
 		}
 	}
 
+	/**
+	 * Called BEFORE the start of a new round to see whether the game is over.
+	 */
+	public boolean isGameOver() {
+		int targetPoints = ruleSet.getTargetPoints();
+		boolean pointTargetHit = false;
+		boolean buttobi = false;
+		for (Player p : players) {
+			if (!pointTargetHit && p.getPoints() >= targetPoints) {
+				pointTargetHit = true;
+			} else if (!buttobi && p.getPoints() < 0) {
+				buttobi = true;
+			} else if (buttobi && pointTargetHit) {
+				break;
+			}
+		}
+
+		if (buttobi && ruleSet.isButtobiEnds()) {
+			return true;
+		} else if (pointTargetHit && isOorasu()) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public boolean isOorasu() {
+		int numRounds = ruleSet.getNumRounds();
+		int roundWind = round.getRoundWindAsInteger();
+		int currentRound = round.getRound();
+
+		return (numRounds == roundWind && currentRound == 4)
+				|| (roundWind > numRounds);
+	}
 }

@@ -31,7 +31,7 @@ public class GameSceneTest extends GameScene implements InputProcessor {
 			OVERHEAD_CAMERA_Z_OFFSET_MM);
 
 	public GameSceneTest() {
-		RuleSet ruleSet = new RuleSet(RuleSet.GameType.RIICHI_FOUR_PLAYER);
+		RuleSet ruleSet = new RuleSet(RuleSet.GameType.RIICHI_FOUR_PLAYER, 2);
 
 		DummyPlayer p1, p2, p3, p4;
 		p1 = new DummyPlayer("Player 1");

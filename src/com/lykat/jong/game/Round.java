@@ -69,4 +69,25 @@ class Round {
 		return roundCounter;
 	}
 
+	public int getRoundWindAsInteger() {
+		switch (roundWind) {
+		case TON:
+			return 1;
+		case NAN:
+			return 2;
+		case SHAA:
+			return 3;
+		case PEI:
+			return 4;
+		case CHUN:
+			return 5;
+		case HAKU:
+			return 6;
+		case HATSU:
+			return 7;
+		default:
+			return -1;
+		}
+	}
+
 }

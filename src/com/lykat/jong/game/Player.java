@@ -58,7 +58,12 @@ public class Player {
 	 */
 	void discard(int index) {
 		if (index == -1) {
-			tsumoKiri();
+			if (tsumoHai == null) {
+				throw new IllegalStateException("The player has not drawn a "
+						+ "tile, so is not allowed to tsumokiri.");
+			}
+			addToDiscardPond(tsumoHai);
+			tsumoHai = null;
 		} else {
 			if (tsumoHai == null) {
 				if (!madeCall) {
@@ -74,20 +79,16 @@ public class Player {
 			Tile tile = hand.remove(index);
 			addToDiscardPond(tile);
 		}
+		if (isRiichi() && !isInterrupted()) {
+			setInterrupted(true);
+		}
 	}
 
 	/**
-	 * Discard the player's 'tsumoHai'.
-	 * 
-	 * @return false if the player did not have a tsumoHai.
+	 * Discard the player's 'tsumoHai'
 	 */
 	protected void tsumoKiri() {
-		if (tsumoHai == null) {
-			throw new IllegalStateException("The player has not drawn a "
-					+ "tile, so is not allowed to tsumokiri.");
-		}
-		addToDiscardPond(tsumoHai);
-		tsumoHai = null;
+		discard(-1);
 	}
 
 	/**

@@ -3,7 +3,6 @@ package com.lykat.jong.test.main;
 import static com.lykat.jong.main.GraphicsConstants.OVERHEAD_CAMERA_Z_OFFSET_MM;
 
 import java.util.Observable;
-import java.util.Observer;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,7 +38,7 @@ public class GameplayTest extends GameScene implements InputProcessor {
 	private InputProcessor playerController;
 
 	public GameplayTest() {
-		RuleSet ruleSet = new RuleSet(RuleSet.GameType.RIICHI_FOUR_PLAYER);
+		RuleSet ruleSet = new RuleSet(RuleSet.GameType.RIICHI_FOUR_PLAYER, 2);
 		Game game = new Game("GameplayTest Game", ruleSet);
 
 		gameManager = new GameManager(game);

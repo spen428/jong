@@ -239,4 +239,9 @@ public class Hand {
 		return false;
 	}
 
+	public static int countFuHan(ArrayList<Yaku> yaku) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 }
