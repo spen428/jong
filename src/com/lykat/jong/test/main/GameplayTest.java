@@ -1,13 +1,11 @@
 package com.lykat.jong.test.main;
 
-import java.util.Observable;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 import com.lykat.jong.control.PlayerController;
@@ -18,7 +16,7 @@ import com.lykat.jong.game.RuleSet;
 import com.lykat.jong.main.GameScene;
 
 /**
- * A test scene displaying the table and tiles.
+ * A playable test scene.
  * 
  * @author lykat
  *
@@ -26,7 +24,7 @@ import com.lykat.jong.main.GameScene;
 public class GameplayTest extends GameScene {
 
 	private final GameManager gameManager;
-	private final InputProcessor playerController;
+	private final PlayerController playerController;
 
 	public GameplayTest() {
 		RuleSet ruleSet = new RuleSet(RuleSet.GameType.RIICHI_FOUR_PLAYER, 2);
@@ -34,8 +32,9 @@ public class GameplayTest extends GameScene {
 
 		gameManager = new GameManager(game);
 		playerController = new PlayerController("Dave", gameManager);
-		((Observable) playerController).addObserver(this);
-		
+		playerController.addObserver(this);
+		playerController.connect();
+
 		for (int i = 1; i < 4; i++) {
 			TsumokiriAI ai = new TsumokiriAI("AI " + i, gameManager);
 			ai.connect();
