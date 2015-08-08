@@ -1,5 +1,7 @@
 package com.lykat.jong.game;
 
+import com.lykat.jong.game.GameManager.GameState;
+
 /**
  * Represents a game of Mahjong. Responsible for distributing tiles to players
  * and handling tile calls.
@@ -19,6 +21,7 @@ public class Game {
 	private int turnCounter;
 	private boolean fourWindsAbort;
 	private boolean deadDraw;
+	private GameState gameState;
 
 	public Game(String name, RuleSet ruleSet) {
 		this.name = name;
@@ -360,6 +363,14 @@ public class Game {
 
 	void setDeadDraw(boolean deadDraw) {
 		this.deadDraw = deadDraw;
+	}
+
+	public GameState getGameState() {
+		return gameState;
+	}
+
+	void setGameState(GameState gameState) {
+		this.gameState = gameState;
 	}
 
 	void interruptPlayers() {

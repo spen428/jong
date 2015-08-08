@@ -14,14 +14,12 @@ import com.lykat.jong.game.Meld.MeldType;
 public class GameManager implements EventListener {
 
 	public static final Logger LOGGER = Logger.getLogger("GameManager");
-	public static final Player SERVER_PLAYER = new Player("Server");
 
 	public enum GameState {
 		MUST_DRAW_LIVE, MUST_DRAW_DEAD, MUST_DISCARD, WAITING, WAITING_FOR_CALLERS, END_OF_ROUND, EXTENDED_KAN_DECLARED, CLOSED_KAN_DECLARED, BONUS_TILE_DECLARED, GAME_OVER, WAITING_FOR_PLAYERS;
 	}
 
 	private int toFlip;
-	private GameState gameState;
 	private ArrayList<Call> canCall, called;
 
 	private final Game game;
@@ -33,7 +31,7 @@ public class GameManager implements EventListener {
 		this.players = new AbstractPlayerController[game.getRuleSet()
 				.getNumPlayers()];
 		this.toFlip = 0;
-		this.gameState = GameState.WAITING_FOR_PLAYERS;
+		this.game.setGameState(GameState.WAITING_FOR_PLAYERS);
 		this.canCall = new ArrayList<Call>();
 		this.called = new ArrayList<Call>();
 	}
@@ -67,8 +65,8 @@ public class GameManager implements EventListener {
 	private void fireEvent(AbstractPlayerController target,
 			GameEventType eventType, Object eventData) {
 		if (target != null) {
-			GameEvent event = new GameEvent(SERVER_PLAYER, eventType,
-					eventData, System.currentTimeMillis());
+			GameEvent event = new GameEvent(null, eventType, eventData,
+					System.currentTimeMillis());
 			target.handleEvent(event);
 		}
 	}
@@ -84,9 +82,10 @@ public class GameManager implements EventListener {
 
 	public void handleEvent(GameEvent event) {
 		// TODO: Timeouts
-		GameEventType eventType = event.getEventType();
-		Player player = event.getSource();
-		boolean isTurn = (player == game.getTurn());
+		final GameEventType eventType = event.getEventType();
+		final Player player = event.getSource();
+		final boolean isTurn = (player == game.getTurn());
+		final GameState gameState = game.getGameState();
 
 		if (gameState == GameState.WAITING_FOR_PLAYERS) {
 			if (eventType == GameEventType.PLAYER_CONNECT) {
@@ -126,13 +125,13 @@ public class GameManager implements EventListener {
 			if (eventType == GameEventType.DRAW_FROM_DEAD_WALL && isTurn) {
 				player.deal(game.getWall().deadWallDraw());
 				game.setDeadDraw(true);
-				gameState = GameState.WAITING;
+				game.setGameState(GameState.WAITING);
 				fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
 			}
 		} else if (gameState == GameState.MUST_DRAW_LIVE) {
 			if (eventType == GameEventType.DRAW_FROM_LIVE_WALL && isTurn) {
 				player.deal(game.getWall().draw());
-				gameState = GameState.WAITING;
+				game.setGameState(GameState.WAITING);
 				fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
 			}
 		} else if (gameState == GameState.WAITING) {
@@ -172,9 +171,10 @@ public class GameManager implements EventListener {
 			p.nextRound();
 			p.deal(wall.haipai());
 		}
-		gameState = GameState.MUST_DRAW_LIVE;
+		game.setGameState(GameState.MUST_DRAW_LIVE);
 		fireEventAllPlayers(GameEventType.ROUND_STARTED, null);
-		fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
+		fireEvent(game.getTurn(), GameEventType.TURN_STARTED,
+				game.getGameState());
 	}
 
 	private int numConnectedPlayers() {
@@ -282,15 +282,17 @@ public class GameManager implements EventListener {
 			}
 		}
 		if (canCall.size() == 0) {
-			if (gameState == GameState.BONUS_TILE_DECLARED
-					|| gameState == GameState.CLOSED_KAN_DECLARED
-					|| gameState == GameState.EXTENDED_KAN_DECLARED) {
-				gameState = GameState.MUST_DRAW_DEAD;
-				fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
-			} else if (gameState == GameState.WAITING_FOR_CALLERS) {
+			if (game.getGameState() == GameState.BONUS_TILE_DECLARED
+					|| game.getGameState() == GameState.CLOSED_KAN_DECLARED
+					|| game.getGameState() == GameState.EXTENDED_KAN_DECLARED) {
+				game.setGameState(GameState.MUST_DRAW_DEAD);
+				fireEvent(game.getTurn(), GameEventType.TURN_STARTED,
+						game.getGameState());
+			} else if (game.getGameState() == GameState.WAITING_FOR_CALLERS) {
 				game.nextTurn();
-				gameState = GameState.MUST_DRAW_LIVE;
-				fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
+				game.setGameState(GameState.MUST_DRAW_LIVE);
+				fireEvent(game.getTurn(), GameEventType.TURN_STARTED,
+						game.getGameState());
 			}
 		}
 	}
@@ -312,18 +314,18 @@ public class GameManager implements EventListener {
 		if (call.getCallEvent() == GameEventType.CALL_KAN) {
 			if (game.isMaxKan()
 					&& game.getWall().getNumRemainingDeadWallDraws() == 0) {
-				gameState = GameState.END_OF_ROUND;
+				game.setGameState(GameState.END_OF_ROUND);
 				fireEventAllPlayers(GameEventType.ABORT_5_KAN, null);
 				return;
 			}
 			toFlip++;
 			// TODO: Kan Pao
-			gameState = GameState.MUST_DRAW_DEAD;
+			game.setGameState(GameState.MUST_DRAW_DEAD);
 		} else {
-			gameState = GameState.MUST_DISCARD;
+			game.setGameState(GameState.MUST_DISCARD);
 		}
 
-		fireEvent(caller, GameEventType.TURN_STARTED, gameState);
+		fireEvent(caller, GameEventType.TURN_STARTED, game.getGameState());
 	}
 
 	private void declareRon(Player winner, boolean changeGameState) {
@@ -332,9 +334,10 @@ public class GameManager implements EventListener {
 
 		// TODO
 		boolean isDealer = (winner == game.getDealer());
-		boolean chankan = (gameState == GameState.EXTENDED_KAN_DECLARED || gameState == GameState.CLOSED_KAN_DECLARED);
+		boolean chankan = (game.getGameState() == GameState.EXTENDED_KAN_DECLARED || game
+				.getGameState() == GameState.CLOSED_KAN_DECLARED);
 		boolean houtei = !chankan
-				&& (gameState != GameState.BONUS_TILE_DECLARED)
+				&& (game.getGameState() != GameState.BONUS_TILE_DECLARED)
 				&& (game.getWall().getNumRemainingDraws() == 0);
 		boolean riichi = winner.isRiichi();
 		boolean ippatsu = riichi && !winner.isInterrupted();
@@ -346,18 +349,18 @@ public class GameManager implements EventListener {
 		if (changeGameState) {
 			boolean buttobi = game.ron(winner, game.getTurn(), payment);
 			if (buttobi && game.getRuleSet().isButtobiEnds()) {
-				gameState = GameState.GAME_OVER;
+				game.setGameState(GameState.GAME_OVER);
 			} else {
 				if (isDealer) {
 					game.incrementBonusCounter();
-					gameState = GameState.END_OF_ROUND;
+					game.setGameState(GameState.END_OF_ROUND);
 				} else {
 					game.resetBonusCounter();
 					if (game.isGameOver()) {
-						gameState = GameState.GAME_OVER;
+						game.setGameState(GameState.GAME_OVER);
 					} else {
 						game.rotateDealers();
-						gameState = GameState.END_OF_ROUND;
+						game.setGameState(GameState.END_OF_ROUND);
 					}
 				}
 			}
@@ -387,7 +390,7 @@ public class GameManager implements EventListener {
 				}
 			} else {
 				game.incrementBonusCounter();
-				gameState = GameState.END_OF_ROUND;
+				game.setGameState(GameState.END_OF_ROUND);
 				fireEventAllPlayers(GameEventType.ABORT_RON, null);
 			}
 		} else {
@@ -415,7 +418,7 @@ public class GameManager implements EventListener {
 		// TODO
 		boolean haitei = false;
 		boolean rinshan = game.isDeadDraw();
-		gameState = GameState.END_OF_ROUND;
+		game.setGameState(GameState.END_OF_ROUND);
 		fireEventAllPlayers(GameEventType.DECLARE_TSUMO, winner);
 	}
 
@@ -424,11 +427,11 @@ public class GameManager implements EventListener {
 		Tile tile = (Tile) event.getEventData();
 		player.declareBonusTile(tile);
 		game.interruptPlayers();
-		gameState = GameState.BONUS_TILE_DECLARED;
+		game.setGameState(GameState.BONUS_TILE_DECLARED);
 		fireEventAllPlayers(GameEventType.DECLARE_BONUS_TILE, player);
 		if (!hasCallers(event)) {
-			gameState = GameState.MUST_DRAW_DEAD;
-			fireEvent(player, GameEventType.TURN_STARTED, gameState);
+			game.setGameState(GameState.MUST_DRAW_DEAD);
+			fireEvent(player, GameEventType.TURN_STARTED, game.getGameState());
 		}
 	}
 
@@ -438,7 +441,7 @@ public class GameManager implements EventListener {
 				&& game.isFirstGoAround()
 				&& Hand.isKyuushuKyuuhai(player.getHand(), player.getTsumoHai())) {
 			game.incrementBonusCounter();
-			gameState = GameState.END_OF_ROUND;
+			game.setGameState(GameState.END_OF_ROUND);
 			fireEventAllPlayers(GameEventType.ABORT_KYUUSHU_KYUUHAI, null);
 		}
 	}
@@ -447,8 +450,8 @@ public class GameManager implements EventListener {
 		Player player = event.getSource();
 		if (player.declareRiichi()) {
 			game.incrementNumRiichiSticks();
-			gameState = GameState.MUST_DISCARD;
-			fireEvent(player, GameEventType.TURN_STARTED, gameState);
+			game.setGameState(GameState.MUST_DISCARD);
+			fireEvent(player, GameEventType.TURN_STARTED, game.getGameState());
 		}
 	}
 
@@ -468,18 +471,12 @@ public class GameManager implements EventListener {
 			game.getWall().flipDora();
 			toFlip--;
 		}
-		gameState = GameState.WAITING_FOR_CALLERS;
+		game.setGameState(GameState.WAITING_FOR_CALLERS);
 		if (!hasCallers(event)) {
-			fireEvent(player, GameEventType.TURN_FINISHED, null);
+			LOGGER.log(Level.FINE, "Discard had no callers.");
+			fireEventAllPlayers(GameEventType.TURN_FINISHED, player);
 			RuleSet rs = game.getRuleSet();
-			if (game.getWall().getNumRemainingDraws() == 0) {
-				gameState = GameState.END_OF_ROUND;
-				fireEventAllPlayers(GameEventType.EXHAUSTIVE_DRAW, null);
-			} else if (rs.isAllRiichiAbort()
-					&& game.getNumPlayersRiichi() == game.getPlayers().length) {
-				gameState = GameState.END_OF_ROUND;
-				fireEventAllPlayers(GameEventType.ABORT_ALL_RIICHI, null);
-			} else if (game.isFourWindsAbort()) {
+			if (game.isFourWindsAbort()) {
 				Tile discard = player.getLatestDiscard();
 				Tile first = game.getFirstDiscard();
 				if (!discard.equals(first) || !discard.isWind()
@@ -487,16 +484,26 @@ public class GameManager implements EventListener {
 					game.setFourWindsAbort(false);
 				}
 				if (game.getTurnCounter() == 3) {
-					gameState = GameState.END_OF_ROUND;
+					game.setGameState(GameState.END_OF_ROUND);
 					fireEventAllPlayers(GameEventType.ABORT_4_WINDS, null);
+					return;
 				}
+			}
+			if (game.getWall().getNumRemainingDraws() == 0) {
+				game.setGameState(GameState.END_OF_ROUND);
+				fireEventAllPlayers(GameEventType.EXHAUSTIVE_DRAW, null);
+			} else if (rs.isAllRiichiAbort()
+					&& game.getNumPlayersRiichi() == game.getPlayers().length) {
+				game.setGameState(GameState.END_OF_ROUND);
+				fireEventAllPlayers(GameEventType.ABORT_ALL_RIICHI, null);
 			} else if (rs.isFourKanAbort() && game.isMaxKan()) {
-				gameState = GameState.END_OF_ROUND;
+				game.setGameState(GameState.END_OF_ROUND);
 				fireEventAllPlayers(GameEventType.ABORT_4_KAN, null);
 			} else {
 				game.nextTurn();
-				gameState = GameState.MUST_DRAW_LIVE;
-				fireEvent(game.getTurn(), GameEventType.TURN_STARTED, gameState);
+				game.setGameState(GameState.MUST_DRAW_LIVE);
+				fireEvent(game.getTurn(), GameEventType.TURN_STARTED,
+						game.getGameState());
 			}
 		}
 	}
@@ -513,20 +520,22 @@ public class GameManager implements EventListener {
 		if (meld.getType() == MeldType.KANTSU_CLOSED) {
 			player.addMeld(meld);
 			game.getWall().flipDora();
-			gameState = GameState.CLOSED_KAN_DECLARED;
+			game.setGameState(GameState.CLOSED_KAN_DECLARED);
 			fireEventAllPlayers(GameEventType.DECLARE_KAN, player);
 			if (!hasCallers(event)) {
-				gameState = GameState.MUST_DRAW_DEAD;
-				fireEvent(player, GameEventType.TURN_STARTED, gameState);
+				game.setGameState(GameState.MUST_DRAW_DEAD);
+				fireEvent(player, GameEventType.TURN_STARTED,
+						game.getGameState());
 			}
 		} else if (meld.getType() == MeldType.KANTSU_EXTENDED) {
 			player.addMeld(meld);
 			toFlip++;
-			gameState = GameState.EXTENDED_KAN_DECLARED;
+			game.setGameState(GameState.EXTENDED_KAN_DECLARED);
 			fireEventAllPlayers(GameEventType.DECLARE_KAN, player);
 			if (!hasCallers(event)) {
-				gameState = GameState.MUST_DRAW_DEAD;
-				fireEvent(player, GameEventType.TURN_STARTED, gameState);
+				game.setGameState(GameState.MUST_DRAW_DEAD);
+				fireEvent(player, GameEventType.TURN_STARTED,
+						game.getGameState());
 			}
 		}
 	}
@@ -563,11 +572,11 @@ public class GameManager implements EventListener {
 			/* Ron calls */
 			if (Hand.getWaits(hand, melds).contains(tile)) {
 				Call ronCall = new Call(player, GameEventType.CALL_RON);
-				if (gameState == GameState.BONUS_TILE_DECLARED
-						|| gameState == GameState.EXTENDED_KAN_DECLARED
-						|| gameState == GameState.WAITING_FOR_CALLERS) {
+				if (game.getGameState() == GameState.BONUS_TILE_DECLARED
+						|| game.getGameState() == GameState.EXTENDED_KAN_DECLARED
+						|| game.getGameState() == GameState.WAITING_FOR_CALLERS) {
 					addCall(ronCall);
-				} else if (gameState == GameState.CLOSED_KAN_DECLARED) {
+				} else if (game.getGameState() == GameState.CLOSED_KAN_DECLARED) {
 					ArrayList<Yaku> yaku = Hand.getYaku(hand, melds, tile);
 					if (yaku.contains(Yaku.YM_KOKUSHI_MUSOU)
 							|| yaku.contains(Yaku.YM_KOKUSHI_MUSOU_13_MAN_MACHI)) {
