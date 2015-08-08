@@ -2,7 +2,6 @@ package com.lykat.jong.game;
 
 import java.util.ArrayList;
 
-import com.lykat.jong.game.Meld.MeldSource;
 import com.lykat.jong.game.Meld.MeldType;
 import com.lykat.jong.util.Sorter;
 
@@ -292,37 +291,28 @@ public class Player {
 		}
 	}
 
-	private void extendKan(Tile tile) {
+	private void extendMeld(Tile newTile, MeldType meldType) {
 		/* Find the meld to update */
 		int index = 0;
 		for (Meld m : melds) {
-			if (m.getType() == MeldType.KOUTSU_OPEN && m.getCallTile() == tile) {
+			if (m.getType() == meldType && m.getCallTile() == newTile) {
 				break;
 			}
 			index++;
 		}
 		if (index >= melds.size()) {
 			throw new IllegalStateException("Attempted to extend a kan "
-					+ "that does not exist: " + tile.toString());
+					+ "that does not exist: " + newTile.toString());
 		} else {
 			Meld oldMeld = melds.get(index);
-			Tile[] tiles = oldMeld.getTiles();
-			Tile callTile = oldMeld.getCallTile();
-			MeldSource meldSource = oldMeld.getMeldSource();
-			Meld newMeld = new Meld(tiles, callTile, meldSource,
-					MeldType.KANTSU_EXTENDED);
+			Meld newMeld = oldMeld.extend(newTile);
 			melds.remove(oldMeld);
 			melds.add(index, newMeld);
-			// TODO : replce with Meld.extend()
 		}
 	}
 
-	public Tile getLatestDiscard() {
-		return discards.get(discards.size() - 1);
-	}
-
-	public void removeLatestDiscard() {
-		discards.remove(getLatestDiscard());
+	private void extendKan(Tile newTile) {
+		extendMeld(newTile, MeldType.KOUTSU_OPEN);
 	}
 
 	/**
@@ -334,23 +324,19 @@ public class Player {
 	 */
 	public void declareBonusTile(Tile tile) {
 		if (tile.getValue() == TileValue.PEI) {
-			Meld bonusMeld = null;
-			for (Meld m : melds) {
-				if (m.getType() == MeldType.BONUS_NORTH) {
-					bonusMeld = m;
-					break;
-				}
-			}
-			if (bonusMeld == null) {
-				bonusMeld = new Meld(new Tile[] { tile }, MeldType.BONUS_NORTH);
-				melds.add(bonusMeld);
-			} else {
-				bonusMeld.extend(tile);
-			}
+			extendMeld(tile, MeldType.BONUS_NORTH);
 		} else {
 			throw new IllegalStateException("Cannot declare as bonus tile: "
 					+ tile.toString());
 		}
+	}
+
+	public Tile getLatestDiscard() {
+		return discards.get(discards.size() - 1);
+	}
+
+	public void removeLatestDiscard() {
+		discards.remove(getLatestDiscard());
 	}
 
 }
