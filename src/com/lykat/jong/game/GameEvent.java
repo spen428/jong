@@ -59,8 +59,12 @@ public class GameEvent extends EventObject {
 	 * 
 	 * @param source
 	 *            the {@link Player} that triggered the event. If this value is
-	 *            null, this typically means that the source of the event was
-	 *            the {@link GameManager}. // TODO
+	 *            set to null, it will be passed with a value of -1 to the
+	 *            EventObject superclass, however the method
+	 *            <code>GameEvent.getSource()</code> will return null.
+	 *            <p>
+	 *            Passing null as the source may be necessary if the source of
+	 *            the GameEvent was, for example, the {@link GameManager}.
 	 * @param eventType
 	 *            the {@link GameEventType} of the event
 	 * @param eventData
@@ -70,7 +74,7 @@ public class GameEvent extends EventObject {
 	 */
 	public GameEvent(Player source, GameEventType eventType, Object eventData,
 			long timeStamp) {
-		super(source);
+		super(source == null ? -1 : source);
 		this.source = source;
 		this.eventType = eventType;
 		this.eventData = eventData;

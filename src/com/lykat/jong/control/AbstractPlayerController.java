@@ -36,9 +36,6 @@ public abstract class AbstractPlayerController extends Observable implements
 
 	protected final void fireEvent(GameEventType eventType, Object eventData) {
 		Player source = player;
-		if (source == null) {
-			source = GameManager.SERVER_PLAYER;
-		}
 
 		GameEvent event = new GameEvent(source, eventType, eventData,
 				System.currentTimeMillis());
