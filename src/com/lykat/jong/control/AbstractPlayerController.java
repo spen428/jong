@@ -44,6 +44,10 @@ public abstract class AbstractPlayerController extends Observable implements
 
 	public abstract void handleEvent(GameEvent event);
 
+	public void connect() {
+		fireEvent(GameEventType.PLAYER_CONNECT, this);
+	}
+
 	public String getName() {
 		return name;
 	}

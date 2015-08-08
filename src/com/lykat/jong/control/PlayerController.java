@@ -22,7 +22,7 @@ public class PlayerController extends AbstractPlayerController {
 	@Override
 	public void handleEvent(GameEvent event) {
 		super.setChanged();
-		
+
 		GameEventType type = event.getEventType();
 		Object data = event.getEventData();
 
@@ -54,7 +54,7 @@ public class PlayerController extends AbstractPlayerController {
 		} else {
 			LOGGER.log(Level.FINER, "Received GameEvent: " + type.toString());
 		}
-		
+
 		super.notifyObservers();
 	}
 
@@ -105,43 +105,36 @@ public class PlayerController extends AbstractPlayerController {
 
 	@Override
 	public boolean keyUp(int keycode) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean keyTyped(char character) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean touchDragged(int screenX, int screenY, int pointer) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean mouseMoved(int screenX, int screenY) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean scrolled(int amount) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 }
