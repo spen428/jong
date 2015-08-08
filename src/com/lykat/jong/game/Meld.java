@@ -140,9 +140,40 @@ public class Meld {
 		return meldSource;
 	}
 
-	public void extend(Tile tile) {
-		// TODO Auto-generated method stub
+	/**
+	 * Returns a new Meld that is an extended version of this one. Only valid
+	 * for extending an open Koutsu into an extended Kantsu, or for adding a new
+	 * bonus tile to a "meld" of declared bonus tiles.
+	 * 
+	 * @param newTile
+	 *            the Tile to extend the meld with
+	 * @return the new meld
+	 * @throws IllegalStateException
+	 *             if trying to extend an incompatible meld, or extending a meld
+	 *             with an incompatible tile.
+	 */
+	public Meld extend(Tile newTile) {
+		if (!newTile.equals(tiles[0])) {
+			throw new IllegalStateException(
+					"Tile cannot be used to extend the meld.");
+		}
 
+		MeldType newType;
+		if (type == MeldType.BONUS_NORTH) {
+			newType = type;
+		} else if (type == MeldType.KOUTSU_OPEN) {
+			newType = MeldType.KANTSU_EXTENDED;
+		} else {
+			throw new IllegalStateException("MeldType cannot be extended.");
+		}
+
+		Tile[] newTiles = new Tile[tiles.length + 1];
+		newTiles[newTiles.length - 1] = newTile;
+		for (int i = 0; i < newTiles.length - 1; i++) {
+			newTiles[i] = tiles[i];
+		}
+
+		return new Meld(newTiles, this.callTile, this.meldSource, newType);
 	}
 
 }
