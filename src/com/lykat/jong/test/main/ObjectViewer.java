@@ -69,8 +69,7 @@ public class ObjectViewer implements ApplicationListener {
 
 	private void loadModels() {
 		ModelInstance i = new ModelInstance(GraphicsConstants.MODEL_TILE);
-		Texture t = new Texture(
-				Gdx.files.internal("res/test.png"));
+		Texture t = new Texture(Gdx.files.internal("res/test.png"));
 		setFaceTexture(i, t);
 		instances.add(i);
 
@@ -116,20 +115,14 @@ public class ObjectViewer implements ApplicationListener {
 
 	@Override
 	public void pause() {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void resize(int arg0, int arg1) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void resume() {
-		// TODO Auto-generated method stub
-
 	}
 
 	public static void main(String[] args) {
