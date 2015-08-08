@@ -159,7 +159,6 @@ public class GameManager implements EventListener {
 			LOGGER.log(Level.FINE, "Unhandled event: " + eventType.toString());
 		}
 
-		LOGGER.log(Level.FINER, "Current gamestate: " + gameState.toString());
 	}
 
 	private void setUpNewRound() {

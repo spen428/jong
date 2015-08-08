@@ -1,5 +1,8 @@
 package com.lykat.jong.game;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import com.lykat.jong.game.GameManager.GameState;
 
 /**
@@ -10,6 +13,8 @@ import com.lykat.jong.game.GameManager.GameState;
  *
  */
 public class Game {
+
+	public static final Logger LOGGER = Logger.getLogger("GameManager");
 
 	private final String name;
 	private final RuleSet ruleSet;
@@ -370,6 +375,8 @@ public class Game {
 	}
 
 	void setGameState(GameState gameState) {
+		LOGGER.log(Level.FINER, "Gamestate change: " + this.gameState + " ==> "
+				+ gameState);
 		this.gameState = gameState;
 	}
 
