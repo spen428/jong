@@ -36,17 +36,6 @@ public class GameManager implements EventListener {
 		this.called = new ArrayList<Call>();
 	}
 
-	private boolean connect(AbstractPlayerController player) {
-		// TODO: no duplicates
-		for (int i = 0; i < players.length; i++) {
-			if (players[i] == null) {
-				players[i] = player;
-				return true;
-			}
-		}
-		return false;
-	}
-
 	public Game getGame() {
 		return game;
 	}
@@ -159,6 +148,28 @@ public class GameManager implements EventListener {
 			LOGGER.log(Level.FINE, "Unhandled event: " + eventType.toString());
 		}
 
+	}
+
+	private boolean connect(AbstractPlayerController player) {
+		int insertIndex = -1;
+		for (int i = 0; i < players.length; i++) {
+			if (players[i] == null) {
+				insertIndex = i;
+			} else if (players[i].getName().equals(player.getName())) {
+				fireEvent(player, GameEventType.SENT_MESSAGE,
+						"Connection refused: Player with the same name is already in this game.");
+				return false;
+			}
+		}
+		if (insertIndex != -1) {
+			players[insertIndex] = player;
+			fireEvent(player, GameEventType.SENT_MESSAGE,
+					"Connection accepted.");
+			return true;
+		}
+		fireEvent(player, GameEventType.SENT_MESSAGE,
+				"Connection refused: Game full.");
+		return false;
 	}
 
 	private void setUpNewRound() {
