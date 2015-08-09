@@ -2,6 +2,11 @@ package com.lykat.jong.test.main;
 
 import static com.lykat.jong.main.GraphicsConstants.OVERHEAD_CAMERA_Z_OFFSET_MM;
 
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputProcessor;
@@ -26,6 +31,9 @@ public class GameSceneTest extends GameScene implements InputProcessor {
 	private boolean overheadView;
 	private Vector3 prevCamPos = new Vector3();
 	private CameraInputController camCont;
+	private long shortestRenderTime = Long.MAX_VALUE;
+	private long longestRenderTime = Long.MIN_VALUE;
+	private long startTime, finishTime;
 
 	private final Vector3 OVERHEAD_CAM_POS = new Vector3(0, 0,
 			OVERHEAD_CAMERA_Z_OFFSET_MM);
@@ -71,8 +79,31 @@ public class GameSceneTest extends GameScene implements InputProcessor {
 
 	@Override
 	public void render() {
+		startTime = System.nanoTime();
+
 		camCont.update();
 		super.render();
+
+		finishTime = System.nanoTime();
+		finishTime -= startTime;
+
+		if (finishTime < shortestRenderTime) {
+			shortestRenderTime = finishTime;
+		} else if (finishTime > longestRenderTime) {
+			longestRenderTime = finishTime;
+		}
+
+		StringBuilder sb = new StringBuilder("Render took ");
+		sb.append(finishTime).append("ns");
+		LOGGER.log(Level.FINEST, sb.toString());
+		LOGGER.log(Level.FINER, "FPS: " + Gdx.graphics.getFramesPerSecond());
+	}
+
+	@Override
+	public void dispose() {
+		LOGGER.log(Level.INFO, "Shortest render: " + shortestRenderTime + "ns");
+		LOGGER.log(Level.INFO, "Longest render: " + longestRenderTime + "ns");
+		super.dispose();
 	}
 
 	private void toggleCamera() {
@@ -164,6 +195,14 @@ public class GameSceneTest extends GameScene implements InputProcessor {
 	}
 
 	public static void main(String[] args) {
+		Logger logger = GameScene.LOGGER;
+		ConsoleHandler handler = new ConsoleHandler();
+		handler.setFormatter(new SimpleFormatter());
+		handler.setLevel(Level.ALL);
+		logger.addHandler(handler);
+		logger.setLevel(Level.FINEST);
+		logger.log(Level.FINER, "Graphics logger initialised.");
+
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
 		config.title = "Jong Scene Test";
 		config.width = 1280;
