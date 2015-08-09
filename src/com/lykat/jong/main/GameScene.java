@@ -7,11 +7,14 @@ import static com.lykat.jong.main.GameConstants.WALL_HEIGHT_TILES;
 import static com.lykat.jong.main.GameConstants.WALL_WIDTH_TILES;
 import static com.lykat.jong.main.GraphicsConstants.DISCARD_TILES_Y_OFFSET_MM;
 import static com.lykat.jong.main.GraphicsConstants.HAND_TILES_Y_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.MODEL_RIICHI_STICK;
 import static com.lykat.jong.main.GraphicsConstants.MODEL_TILE;
 import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Y_OFFSET_MM;
 import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Z_OFFSET_MM;
 import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_RADIUS_MM;
 import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_THICKNESS_MM;
+import static com.lykat.jong.main.GraphicsConstants.RIICHI_HEIGHT_MM;
+import static com.lykat.jong.main.GraphicsConstants.RIICHI_STICK_Y_OFFSET_MM;
 import static com.lykat.jong.main.GraphicsConstants.TILE_GAP_MM;
 import static com.lykat.jong.main.GraphicsConstants.TILE_HEIGHT_MM;
 import static com.lykat.jong.main.GraphicsConstants.TILE_THICKNESS_MM;
@@ -45,10 +48,10 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.IdentityMap;
 import com.lykat.jong.game.Game;
 import com.lykat.jong.game.Player;
 import com.lykat.jong.game.Tile;
+import com.lykat.jong.game.Wall;
 
 /**
  * Renders the table and tiles based on an instance of {@link Game}.
@@ -65,8 +68,12 @@ public class GameScene implements ApplicationListener, Observer {
 	protected PerspectiveCamera cam;
 	protected ModelBatch modelBatch;
 	protected AssetManager assets;
+
+	/* Model instances */
 	protected Array<ModelInstance> instances = new Array<ModelInstance>();
-	protected IdentityMap<Tile, ModelInstance> tiles = new IdentityMap<Tile, ModelInstance>();
+	protected Array<ModelInstance> liveWallTiles, deadWallTiles;
+	protected ModelInstance[] playerTsumohai;
+	protected ModelInstance[][] playerDiscards, playerHands, playerMelds;
 
 	private boolean loading, changed;
 
@@ -132,6 +139,24 @@ public class GameScene implements ApplicationListener, Observer {
 			return true;
 		}
 		return false;
+	}
+
+	private void initVars() {
+		int numPlayers = game.getPlayers().length;
+
+		playerTsumohai = new ModelInstance[numPlayers];
+		playerDiscards = new ModelInstance[numPlayers][];
+		playerHands = new ModelInstance[numPlayers][];
+		playerMelds = new ModelInstance[numPlayers][];
+		for (int p = 0; p < numPlayers; p++) {
+			playerDiscards[p] = new ModelInstance[GameConstants.MAX_DISCARDS_PER_PLAYER];
+			playerHands[p] = new ModelInstance[GameConstants.NUM_HAND_TILES];
+			playerMelds[p] = new ModelInstance[GameConstants.MAX_OPEN_MELDS];
+		}
+
+		int numLiveWallTiles = game.getWall().getNumRemainingDraws();
+		liveWallTiles = new Array<ModelInstance>(true, numLiveWallTiles);
+		deadWallTiles = new Array<ModelInstance>(true, Wall.NUM_DEADWALL_TILES);
 	}
 
 	private void loadGraphics() {
@@ -207,7 +232,8 @@ public class GameScene implements ApplicationListener, Observer {
 
 			for (int x = 0; x < numHandTiles; x++) {
 				Tile tile = player.getHand().get(x);
-				if (tiles.containsKey(tile)) {
+				if (playerHands[p][x] != null
+						&& playerHands[p][x].userData.equals(tile.toString())) {
 					continue;
 				}
 
@@ -224,14 +250,18 @@ public class GameScene implements ApplicationListener, Observer {
 				rotateAboutCenter(instance.transform, p * 90);
 				instance.transform.rotate(0, -1, 0, 90).rotate(-1, 0, 0, 90);
 
-				instances.add(instance);
+				instance.userData = tile.toString();
 				setTileFace(instance, TextureLoader.getTileTexture(tile));
+
+				playerHands[p][x] = instance;
 			}
 
 			/* Tsumo-hai */
 			Tile tsumohai = player.getTsumoHai();
 			if (tsumohai != null) {
-				if (tiles.containsKey(tsumohai)) {
+				if (playerTsumohai[p] != null
+						&& playerTsumohai[p].userData.equals(tsumohai
+								.toString())) {
 					continue;
 				}
 
@@ -258,11 +288,13 @@ public class GameScene implements ApplicationListener, Observer {
 					instance.transform.rotate(0, 0, -1, 90);
 				}
 
-				instances.add(instance);
+				instance.userData = tsumohai.toString();
 				setTileFace(instance, TextureLoader.getTileTexture(tsumohai));
+
+				playerTsumohai[p] = instance;
 			}
 
-			/* Open melds */
+			// /* Open melds */
 			// for (int y = 0; y < 4; y++) {
 			// for (int x = 0; x < 4; x++) {
 			// ModelInstance instance = new ModelInstance(MODEL_TILE);
@@ -285,28 +317,31 @@ public class GameScene implements ApplicationListener, Observer {
 			// }
 
 			/* Riichi Sticks */
-			// if (player.isRiichi()) {
-			// ModelInstance instance = new ModelInstance(MODEL_RIICHI_STICK);
-			//
-			// /* Move into position */
-			// float xPos = 0;
-			// float yPos = -RIICHI_STICK_Y_OFFSET_MM;
-			// float zPos = RIICHI_HEIGHT_MM;
-			// instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
-			// FORWARD, UP);
-			//
-			// /* Rotate into place */
-			// rotateAboutCenter(instance.transform, p * 90);
-			//
-			// instances.add(instance);
-			// }
+			if (player.isRiichi()) {
+				ModelInstance instance = new ModelInstance(MODEL_RIICHI_STICK);
+
+				/* Move into position */
+				float xPos = 0;
+				float yPos = -RIICHI_STICK_Y_OFFSET_MM;
+				float zPos = RIICHI_HEIGHT_MM;
+				instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
+						FORWARD, UP);
+
+				/* Rotate into place */
+				rotateAboutCenter(instance.transform, p * 90);
+
+				instances.add(instance);
+			}
 
 			/* Discards */
 			if (player.getDiscards().size() > 0) {
 				halfWidth = ((DISCARD_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
 				for (int i = 0; i < player.getDiscards().size(); i++) {
 					Tile tile = player.getDiscards().get(i);
-					if (tiles.containsKey(tile)) {
+					if (playerDiscards[p][i] != null
+							&& playerDiscards[p][i].userData.equals(tile
+									.toString())) {
+						/* Tile has already been rendered */
 						continue;
 					}
 
@@ -330,27 +365,25 @@ public class GameScene implements ApplicationListener, Observer {
 					rotateAboutCenter(instance.transform, p * 90);
 					instance.transform.rotate(1, 0, 0, 180)
 							.rotate(0, 0, -1, 90);
-
-					instances.add(instance);
+					instance.userData = tile.toString();
 					setTileFace(instance, TextureLoader.getTileTexture(tile));
+					playerDiscards[p][i] = instance;
 				}
 			}
 		}
 	}
 
-	private long start, finish;
-
 	@Override
 	public void render() {
-		start = System.nanoTime();
-
 		if (setGame != null) {
 			game = setGame;
 			setGame = null;
+			loading = true;
 		}
 
 		if (game != null) {
-			if (loading && assets.update()) {
+			if (loading) { // && assets.update()
+				initVars();
 				loadGraphics();
 			}
 			if (changed) {
@@ -363,15 +396,33 @@ public class GameScene implements ApplicationListener, Observer {
 			Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
 			modelBatch.begin(cam);
+
 			modelBatch.render(instances, environment);
+			modelBatch.render(liveWallTiles, environment);
+			modelBatch.render(deadWallTiles, environment);
+			for (int p = 0; p < playerTsumohai.length; p++) {
+				if (playerTsumohai[p] != null) {
+					modelBatch.render(playerTsumohai[p], environment);
+				}
+				for (ModelInstance r : playerDiscards[p]) {
+					if (r != null) {
+						modelBatch.render(r, environment);
+					}
+				}
+				for (ModelInstance r : playerMelds[p]) {
+					if (r != null) {
+						modelBatch.render(r, environment);
+					}
+				}
+				for (ModelInstance r : playerHands[p]) {
+					if (r != null) {
+						modelBatch.render(r, environment);
+					}
+				}
+			}
+
 			modelBatch.end();
 		}
-
-		finish = System.nanoTime();
-		StringBuilder sb = new StringBuilder("Render took ");
-		sb.append((finish - start));
-		sb.append("ns");
-		LOGGER.log(Level.FINEST, sb.toString());
 	}
 
 	@Override

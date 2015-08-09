@@ -14,6 +14,9 @@ public final class GameConstants {
 	 * greater than 1).
 	 */
 	public static final int MIN_TILES_TSUMOHAI_ONTOP = 8;
+	public static final int MAX_DISCARDS_PER_PLAYER = 22;
+	public static final int NUM_HAND_TILES = 13;
+	public static final int MAX_OPEN_MELDS = 5;
 
 	private GameConstants() {
 	}
