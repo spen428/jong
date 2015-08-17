@@ -1,5 +1,6 @@
 package com.lykat.jong.game;
 
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -318,7 +319,12 @@ public class Game {
 	}
 
 	public Tile getFirstDiscard() {
-		return this.getDealer().getDiscards().get(0);
+		ArrayList<Tile> d = this.getDealer().getDiscards();
+		if (d.size() > 0) {
+			return d.get(0);
+		} else {
+			return null;
+		}
 	}
 
 	public int getTurnCounter() {

@@ -35,6 +35,8 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
@@ -66,6 +68,7 @@ public class GameScene implements ApplicationListener, Observer {
 	protected Game game, setGame;
 	protected Environment environment;
 	protected PerspectiveCamera cam;
+	protected SpriteBatch spriteBatch;
 	protected ModelBatch modelBatch;
 	protected AssetManager assets;
 
@@ -76,6 +79,8 @@ public class GameScene implements ApplicationListener, Observer {
 	protected ModelInstance[][] playerDiscards, playerHands, playerMelds;
 
 	private boolean loading, changed;
+
+	protected BitmapFont font;
 
 	protected final String[] MODELS = new String[] {};
 
@@ -88,6 +93,9 @@ public class GameScene implements ApplicationListener, Observer {
 
 	@Override
 	public void create() {
+		font = new BitmapFont(Gdx.files.internal("res/arial-15.fnt"),
+				Gdx.files.internal("res/arial-15.png"), false, true);
+		spriteBatch = new SpriteBatch();
 		modelBatch = new ModelBatch();
 		environment = new Environment();
 		environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f,
@@ -230,7 +238,14 @@ public class GameScene implements ApplicationListener, Observer {
 			int numHandTiles = player.getHand().size();
 			float halfWidth = ((numHandTiles * (tileWG)) - TILE_GAP_MM) / 2;
 
-			for (int x = 0; x < numHandTiles; x++) {
+			for (int x = 0; x < playerHands[p].length; x++) {
+				if (x >= numHandTiles) {
+					if (playerHands[p][x] != null) {
+						playerHands[p][x] = null;
+					}
+					continue;
+				}
+
 				Tile tile = player.getHand().get(x);
 				if (playerHands[p][x] != null
 						&& playerHands[p][x].userData.equals(tile.toString())) {
@@ -315,7 +330,8 @@ public class GameScene implements ApplicationListener, Observer {
 			// randomTileFace(instance);
 			// }
 			// }
-
+			
+			// TODO: use final vars
 			/* Riichi Sticks */
 			if (player.isRiichi()) {
 				ModelInstance instance = new ModelInstance(MODEL_RIICHI_STICK);
@@ -336,7 +352,15 @@ public class GameScene implements ApplicationListener, Observer {
 			/* Discards */
 			if (player.getDiscards().size() > 0) {
 				halfWidth = ((DISCARD_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
-				for (int i = 0; i < player.getDiscards().size(); i++) {
+				for (int i = 0; i < playerDiscards.length; i++) {
+					if (i >= player.getDiscards().size()) {
+						if (playerDiscards[p][i] != null) {
+							/* Tile should be cleared */
+							playerDiscards[p][i] = null;
+						}
+						continue;
+					}
+
 					Tile tile = player.getDiscards().get(i);
 					if (playerDiscards[p][i] != null
 							&& playerDiscards[p][i].userData.equals(tile
@@ -387,8 +411,8 @@ public class GameScene implements ApplicationListener, Observer {
 				loadGraphics();
 			}
 			if (changed) {
-				loadTiles();
 				changed = false;
+				loadTiles();
 			}
 
 			Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(),
@@ -422,6 +446,16 @@ public class GameScene implements ApplicationListener, Observer {
 			}
 
 			modelBatch.end();
+
+			/* Overlay */
+			spriteBatch.setProjectionMatrix(cam.combined);
+			spriteBatch.begin();
+			font.setScale(2);
+			font.setColor(Color.WHITE);
+			font.draw(spriteBatch, "Tiles Remaining: "
+					+ game.getWall().getNumRemainingDraws(), 0, 0);
+			spriteBatch.end();
+
 		}
 	}
 
@@ -453,9 +487,8 @@ public class GameScene implements ApplicationListener, Observer {
 	}
 
 	@Override
-	public void update(Observable arg0, Object arg1) {
+	public void update(Observable o, Object obj) {
 		LOGGER.log(Level.FINER, "Graphical update called");
 		changed = true;
 	}
-
 }

@@ -2,6 +2,8 @@ package com.lykat.jong.main;
 
 public final class GameConstants {
 
+	public static final int TURN_DELAY_MS = 150;
+
 	public static final int WALL_WIDTH_TILES = 17;
 	public static final int WALL_HEIGHT_TILES = 2;
 

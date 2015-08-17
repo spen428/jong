@@ -89,13 +89,11 @@ public class PlayerController extends AbstractPlayerController {
 	public boolean keyDown(int keycode) {
 		LOGGER.log(Level.FINEST, "keyDown event: " + keycode);
 		switch (keycode) {
-		case Keys.NUM_1:
-			LOGGER.log(Level.FINER, "Firing event: "
-					+ GameEventType.PLAYER_CONNECT.toString());
-			super.fireEvent(GameEventType.PLAYER_CONNECT, this);
-			break;
 		case Keys.F:
 			super.discard(-1);
+			break;
+		case Keys.NUM_1:
+			super.fireEvent(GameEventType.OK);
 			break;
 		default:
 			break;

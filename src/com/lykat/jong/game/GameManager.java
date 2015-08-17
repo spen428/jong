@@ -20,10 +20,11 @@ public class GameManager implements EventListener {
 	}
 
 	private int toFlip;
-	private ArrayList<Call> canCall, called;
+	private final ArrayList<Call> canCall, called;
 
 	private final Game game;
 	private final AbstractPlayerController[] players;
+	private final ArrayList<Player> waitingForOk;
 
 	public GameManager(Game game) {
 		super();
@@ -34,6 +35,7 @@ public class GameManager implements EventListener {
 		this.game.setGameState(GameState.WAITING_FOR_PLAYERS);
 		this.canCall = new ArrayList<Call>();
 		this.called = new ArrayList<Call>();
+		this.waitingForOk = new ArrayList<Player>();
 	}
 
 	public Game getGame() {
@@ -140,10 +142,12 @@ public class GameManager implements EventListener {
 				}
 			}
 		} else if (gameState == GameState.END_OF_ROUND) {
-			// TODO: Players must click to proceed.
-
-			/* Set up */
-			setUpNewRound();
+			if (eventType == GameEventType.OK) {
+				waitingForOk.remove(player);
+			}
+			if (waitingForOk.size() > 0) {
+				setUpNewRound();
+			}
 		} else {
 			LOGGER.log(Level.FINE, "Unhandled event: " + eventType.toString());
 		}
@@ -181,6 +185,8 @@ public class GameManager implements EventListener {
 			p.nextRound();
 			p.deal(wall.haipai());
 		}
+		called.clear();
+		canCall.clear();
 		game.setGameState(GameState.MUST_DRAW_LIVE);
 		fireEventAllPlayers(GameEventType.ROUND_STARTED, null);
 		fireEvent(game.getTurn(), GameEventType.TURN_STARTED,
