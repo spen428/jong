@@ -23,75 +23,74 @@ import com.lykat.jong.main.GameScene;
  */
 public class GameplayTest extends GameScene {
 
-	private final GameManager gameManager;
-	private final PlayerController playerController;
+    private final GameManager gameManager;
+    private final PlayerController playerController;
 
-	public GameplayTest() {
-		RuleSet ruleSet = new RuleSet(RuleSet.GameType.RIICHI_FOUR_PLAYER, 2);
-		Game game = new Game("GameplayTest Game", ruleSet);
+    public GameplayTest() {
+        RuleSet ruleSet = new RuleSet(RuleSet.GameType.RIICHI_FOUR_PLAYER, 2);
+        this.game = new Game("GameplayTest Game", ruleSet);
+        this.gameManager = new GameManager(this.game);
+        this.playerController = new PlayerController("Dave", this.gameManager);
+        this.playerController.addObserver(this);
+        this.playerController.connect();
 
-		gameManager = new GameManager(game);
-		playerController = new PlayerController("Dave", gameManager);
-		playerController.addObserver(this);
-		playerController.connect();
+        for (int i = 1; i < 4; i++) {
+            TsumokiriAI ai = new TsumokiriAI("AI " + i, this.gameManager);
+            ai.connect();
+        }
 
-		for (int i = 1; i < 4; i++) {
-			TsumokiriAI ai = new TsumokiriAI("AI " + i, gameManager);
-			ai.connect();
-		}
+        super.setGame(this.game);
+    }
 
-		super.setGame(game);
-	}
+    @Override
+    public void create() {
+        super.create();
+        Gdx.input.setInputProcessor(this.playerController);
+    }
 
-	@Override
-	public void create() {
-		super.create();
-		Gdx.input.setInputProcessor(playerController);
-	}
+    @Override
+    public void render() {
+        super.render();
+    }
 
-	@Override
-	public void render() {
-		super.render();
-	}
+    public static void main(String[] args) {
+        initLoggers();
 
-	public static void main(String[] args) {
-		initLoggers();
+        LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
+        config.title = "Jong Gameplay Test";
+        config.width = 1280;
+        config.height = 720;
+        config.samples = 8;
+        config.useGL30 = true;
+        config.vSyncEnabled = true;
+        config.fullscreen = false;
+        new LwjglApplication(new GameplayTest(), config);
+    }
 
-		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-		config.title = "Jong Gameplay Test";
-		config.width = 1280;
-		config.height = 720;
-		config.samples = 8;
-		config.useGL30 = true;
-		config.vSyncEnabled = true;
-		config.fullscreen = false;
-		new LwjglApplication(new GameplayTest(), config);
-	}
+    private static void initLoggers() {
+        Logger logger = PlayerController.LOGGER;
+        ConsoleHandler handler = new ConsoleHandler();
+        handler.setFormatter(new SimpleFormatter());
+        handler.setLevel(Level.ALL);
+        logger.addHandler(handler);
+        logger.setLevel(Level.ALL);
+        logger.log(Level.FINER, "PlayerController logger initialised.");
 
-	private static void initLoggers() {
-		Logger logger = PlayerController.LOGGER;
-		ConsoleHandler handler = new ConsoleHandler();
-		handler.setFormatter(new SimpleFormatter());
-		handler.setLevel(Level.ALL);
-		logger.addHandler(handler);
-		logger.setLevel(Level.ALL);
-		logger.log(Level.FINER, "PlayerController logger initialised.");
+        logger = GameManager.LOGGER;
+        handler = new ConsoleHandler();
+        handler.setFormatter(new SimpleFormatter());
+        handler.setLevel(Level.ALL);
+        logger.addHandler(handler);
+        logger.setLevel(Level.ALL);
+        logger.log(Level.FINER, "GameManager logger initialised.");
 
-		logger = GameManager.LOGGER;
-		handler = new ConsoleHandler();
-		handler.setFormatter(new SimpleFormatter());
-		handler.setLevel(Level.ALL);
-		logger.addHandler(handler);
-		logger.setLevel(Level.ALL);
-		logger.log(Level.FINER, "GameManager logger initialised.");
-
-		logger = GameScene.LOGGER;
-		handler = new ConsoleHandler();
-		handler.setFormatter(new SimpleFormatter());
-		handler.setLevel(Level.ALL);
-		logger.addHandler(handler);
-		logger.setLevel(Level.FINER);
-		logger.log(Level.FINER, "Graphics logger initialised.");
-	}
+        logger = GameScene.LOGGER;
+        handler = new ConsoleHandler();
+        handler.setFormatter(new SimpleFormatter());
+        handler.setLevel(Level.ALL);
+        logger.addHandler(handler);
+        logger.setLevel(Level.FINER);
+        logger.log(Level.FINER, "Graphics logger initialised.");
+    }
 
 }
