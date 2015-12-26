@@ -33,15 +33,25 @@ public class TsumokiriAI extends AbstractPlayerController {
                 if (type == GameEventType.TURN_STARTED) {
                     if (state == GameState.MUST_DRAW_LIVE) {
                         super.fireEvent(GameEventType.DRAW_FROM_LIVE_WALL);
+                        sleep();
                     } else if (state == GameState.MUST_DRAW_DEAD) {
                         super.fireEvent(GameEventType.DRAW_FROM_DEAD_WALL);
+                        sleep();
                     }
                 }
             }
-            super.tsumoKiri();
+            super.tsumoKiri(); // TODO: Fire only when needed
         }
 
         super.notifyObservers(event);
+    }
+
+    private static void sleep() {
+        try {
+            Thread.sleep(100);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     @Override

@@ -1,6 +1,9 @@
 package com.lykat.jong.game;
 
 import java.util.ArrayList;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,6 +38,9 @@ public class GameManager implements GameEventListener {
     private final AbstractPlayerController[] players;
     private final ArrayList<Player> waitingForOk;
 
+    private final Thread myThread;
+    final BlockingQueue<GameEvent> myQueue;
+
     public GameManager(Game game) {
         super();
         this.game = game;
@@ -45,6 +51,24 @@ public class GameManager implements GameEventListener {
         this.canCall = new ArrayList<>();
         this.called = new ArrayList<>();
         this.waitingForOk = new ArrayList<>();
+
+        this.myQueue = new ArrayBlockingQueue<>(20);
+        this.myThread = new Thread(new Runnable() {
+            private final BlockingQueue<GameEvent> queue = GameManager.this.myQueue;
+
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        asyncHandleEvent(this.queue.take());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+        this.myThread.setDaemon(true);
+        this.myThread.start();
     }
 
     public Game getGame() {
@@ -82,6 +106,14 @@ public class GameManager implements GameEventListener {
 
     @Override
     public void handleEvent(GameEvent event) {
+        try {
+            this.myQueue.put(event);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    void asyncHandleEvent(GameEvent event) {
         // TODO: Timeouts
         final GameEventType eventType = event.getEventType();
         final Player player = event.getSource();
@@ -650,4 +682,5 @@ public class GameManager implements GameEventListener {
             this.canCall.add(call);
         }
     }
+
 }
