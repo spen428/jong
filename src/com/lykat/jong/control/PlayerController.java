@@ -55,7 +55,7 @@ public class PlayerController extends AbstractPlayerController {
 			LOGGER.log(Level.FINER, "Received GameEvent: " + type.toString());
 		}
 
-		super.notifyObservers();
+		super.notifyObservers(event);
 	}
 
 	private void handleConfirmation(GameEvent event) {

@@ -73,24 +73,24 @@ public class GameplayTest extends GameScene {
         handler.setFormatter(new SimpleFormatter());
         handler.setLevel(Level.ALL);
         logger.addHandler(handler);
-        logger.setLevel(Level.ALL);
-        logger.log(Level.FINER, "PlayerController logger initialised.");
+        logger.setLevel(Level.OFF);
+        logger.log(Level.INFO, "PlayerController logger initialised.");
 
         logger = GameManager.LOGGER;
         handler = new ConsoleHandler();
         handler.setFormatter(new SimpleFormatter());
         handler.setLevel(Level.ALL);
         logger.addHandler(handler);
-        logger.setLevel(Level.ALL);
-        logger.log(Level.FINER, "GameManager logger initialised.");
+        logger.setLevel(Level.OFF);
+        logger.log(Level.INFO, "GameManager logger initialised.");
 
         logger = GameScene.LOGGER;
         handler = new ConsoleHandler();
         handler.setFormatter(new SimpleFormatter());
         handler.setLevel(Level.ALL);
         logger.addHandler(handler);
-        logger.setLevel(Level.FINER);
-        logger.log(Level.FINER, "Graphics logger initialised.");
+        logger.setLevel(Level.ALL);
+        logger.log(Level.INFO, "Graphics logger initialised.");
     }
 
 }

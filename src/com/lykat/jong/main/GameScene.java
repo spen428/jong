@@ -9,6 +9,8 @@ import static com.lykat.jong.main.GraphicsConstants.DISCARD_TILES_Y_OFFSET_MM;
 import static com.lykat.jong.main.GraphicsConstants.HAND_TILES_Y_OFFSET_MM;
 import static com.lykat.jong.main.GraphicsConstants.MODEL_RIICHI_STICK;
 import static com.lykat.jong.main.GraphicsConstants.MODEL_TILE;
+import static com.lykat.jong.main.GraphicsConstants.OPEN_MELDS_X_OFFSET_MM;
+import static com.lykat.jong.main.GraphicsConstants.OPEN_MELDS_Y_OFFSET_MM;
 import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Y_OFFSET_MM;
 import static com.lykat.jong.main.GraphicsConstants.PLAYER_CAMERA_Z_OFFSET_MM;
 import static com.lykat.jong.main.GraphicsConstants.PLAYING_SURFACE_RADIUS_MM;
@@ -51,6 +53,7 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.lykat.jong.game.Game;
+import com.lykat.jong.game.GameEvent;
 import com.lykat.jong.game.Player;
 import com.lykat.jong.game.Tile;
 import com.lykat.jong.game.Wall;
@@ -78,6 +81,11 @@ public class GameScene implements ApplicationListener, Observer {
     protected ModelInstance[] playerTsumohai;
     protected ModelInstance[][] playerDiscards, playerHands, playerMelds;
 
+    /**
+     * List of ModelInstances that have not yet been rendered.
+     */
+    protected Array<ModelInstance> toRender = new Array<>();
+
     private boolean loading, changed;
 
     protected BitmapFont font;
@@ -85,7 +93,7 @@ public class GameScene implements ApplicationListener, Observer {
     protected final String[] MODELS = new String[] {};
 
     protected final Vector3 PLAYER_CAM_POS = new Vector3(0,
-            -PLAYER_CAMERA_Y_OFFSET_MM, PLAYER_CAMERA_Z_OFFSET_MM);
+            PLAYER_CAMERA_Y_OFFSET_MM, PLAYER_CAMERA_Z_OFFSET_MM);
     protected final Vector3 CENTER_POS = new Vector3(0, 0, 0);
     protected final Vector3 UP = new Vector3(0, 0, 1);
     protected final Vector3 RIGHT = new Vector3(1, 0, 0);
@@ -109,6 +117,8 @@ public class GameScene implements ApplicationListener, Observer {
         this.cam.far = 15000f;
         this.cam.position.set(this.PLAYER_CAM_POS);
         this.cam.lookAt(0, 0, 0);
+        // TODO: Fix this.PLAYER_CAM_POS
+        rotatePlayerCamera(-90); // Rotate to player 0
         this.cam.update();
 
         this.assets = new AssetManager();
@@ -126,6 +136,11 @@ public class GameScene implements ApplicationListener, Observer {
         matrix.rotate(new Vector3(0, 0, 1), degrees);
         pos = pos.sub(this.CENTER_POS);
         matrix.translate(pos);
+    }
+
+    protected void rotatePlayerCamera(float degrees) {
+        this.cam.rotateAround(this.CENTER_POS, this.UP, degrees);
+        this.cam.lookAt(0, 0, 0);
     }
 
     private static boolean setTileFace(ModelInstance tileInstance,
@@ -312,27 +327,27 @@ public class GameScene implements ApplicationListener, Observer {
                 this.playerTsumohai[p] = instance;
             }
 
-            // /* Open melds */
-            // for (int y = 0; y < 4; y++) {
-            // for (int x = 0; x < 4; x++) {
-            // ModelInstance instance = new ModelInstance(MODEL_TILE);
-            //
-            // /* Move into position */
-            // float xPos = OPEN_MELDS_X_OFFSET_MM - (x * tileWG);
-            // float yPos = -OPEN_MELDS_Y_OFFSET_MM + (y * tileHG);
-            // float zPos = TILE_THICKNESS_MM;
-            // instance.transform.setToWorld(
-            // new Vector3(xPos, yPos, zPos), FORWARD, UP);
-            //
-            // /* Rotate into place */
-            // rotateAboutCenter(instance.transform, p * 90);
-            // instance.transform.rotate(1, 0, 0, 180)
-            // .rotate(0, 0, -1, 90);
-            //
-            // instances.add(instance);
-            // randomTileFace(instance);
-            // }
-            // }
+            /* Open melds */
+            for (int y = 0; y < 4; y++) {
+                for (int x = 0; x < 4; x++) {
+                    ModelInstance instance = new ModelInstance(MODEL_TILE);
+
+                    /* Move into position */
+                    float xPos = OPEN_MELDS_X_OFFSET_MM - (x * tileWG);
+                    float yPos = -OPEN_MELDS_Y_OFFSET_MM + (y * tileHG);
+                    float zPos = TILE_THICKNESS_MM;
+                    instance.transform.setToWorld(
+                            new Vector3(xPos, yPos, zPos), FORWARD, UP);
+
+                    /* Rotate into place */
+                    rotateAboutCenter(instance.transform, p * 90);
+                    instance.transform.rotate(1, 0, 0, 180)
+                            .rotate(0, 0, -1, 90);
+
+                    instances.add(instance);
+                    setTileFace(instance, TextureLoader.getTextureById(0));
+                }
+            }
 
             // TODO: use final vars
             /* Riichi Sticks */
@@ -417,10 +432,11 @@ public class GameScene implements ApplicationListener, Observer {
             if (this.loading) { // && assets.update()
                 initVars();
                 loadGraphics();
-            }
-            if (this.changed) { // TODO: Update based on GameEvent fired
-                this.changed = false;
                 loadTiles();
+            }
+            if (this.changed) {
+                loadTiles();
+                this.changed = false;
             }
 
             Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(),
@@ -455,6 +471,14 @@ public class GameScene implements ApplicationListener, Observer {
             }
 
             this.modelBatch.end();
+
+            // this.modelBatch.begin(this.cam);
+            // for (Iterator<ModelInstance> it = this.toRender.iterator(); it
+            // .hasNext();) {
+            // this.modelBatch.render(it.next(), this.environment);
+            // it.remove();
+            // }
+            // this.modelBatch.end();
 
             /* Overlay */
             this.spriteBatch.setProjectionMatrix(this.cam.combined);
@@ -500,7 +524,49 @@ public class GameScene implements ApplicationListener, Observer {
 
     @Override
     public void update(Observable o, Object obj) {
-        LOGGER.log(Level.FINER, "Graphical update called");
-        this.changed = true;
+        if (obj instanceof GameEvent) {
+            updateToRender((GameEvent) obj);
+            LOGGER.log(Level.FINER, "Graphical update called");
+            this.changed = true;
+        } else {
+            LOGGER.log(Level.WARNING, "Unhandled Observable object");
+        }
+    }
+
+    /**
+     * Place in the `toRender` Array the ModelInstances that have changed as a
+     * result of the given GameEvent
+     * 
+     * @param event
+     *            the GameEvent
+     */
+    private void updateToRender(GameEvent event) {
+        // TODO
+        Player player = event.getSource();
+        switch (event.getEventType()) {
+        case CALL_CHII:
+            break;
+        case CALL_KAN:
+            break;
+        case CALL_PON:
+            break;
+        case CALL_RON:
+            break;
+        case DECLARE_BONUS_TILE:
+            break;
+        case DECLARE_KAN:
+            break;
+        case DECLARE_RIICHI:
+            break;
+        case DISCARD:
+            // this.toRender.add(player.getLatestDiscard());
+            break;
+        case DRAW_FROM_DEAD_WALL:
+            break;
+        case DRAW_FROM_LIVE_WALL:
+            break;
+        default:
+            break;
+        }
     }
 }

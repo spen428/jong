@@ -1,7 +1,6 @@
 package com.lykat.jong.game;
 
 import java.util.ArrayList;
-import java.util.EventListener;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -11,7 +10,7 @@ import com.lykat.jong.control.AbstractPlayerController;
 import com.lykat.jong.game.GameEvent.GameEventType;
 import com.lykat.jong.game.Meld.MeldType;
 
-public class GameManager implements EventListener {
+public class GameManager implements GameEventListener {
 
     public static final Logger LOGGER = Logger.getLogger("GameManager"); //$NON-NLS-1$
 
@@ -81,6 +80,7 @@ public class GameManager implements EventListener {
         return null;
     }
 
+    @Override
     public void handleEvent(GameEvent event) {
         // TODO: Timeouts
         final GameEventType eventType = event.getEventType();
@@ -496,8 +496,10 @@ public class GameManager implements EventListener {
     private void discard(GameEvent event) {
         Player player = event.getSource();
         int index = (int) event.getEventData();
-        player.discard(index);
+        Tile tile = player.discard(index);
         this.game.setDeadDraw(false);
+        LOGGER.log(Level.FINER, String.format("Player %s discarded tile %s",
+                player.getName(), tile.toString()));
 
         while (this.toFlip > 0) {
             this.game.getWall().flipDora();
