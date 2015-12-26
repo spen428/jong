@@ -88,6 +88,11 @@ public class GameManager implements GameEventListener {
         final boolean isTurn = (player == this.game.getTurn());
         final GameState gameState = this.game.getGameState();
 
+        // Echo event back to source
+        if (player != null) {
+            getPlayerController(player).handleEvent(event);
+        }
+
         if (gameState == GameState.WAITING_FOR_PLAYERS) {
             if (eventType == GameEventType.PLAYER_CONNECT) {
                 AbstractPlayerController conn = (AbstractPlayerController) event
