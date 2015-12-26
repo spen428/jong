@@ -338,6 +338,8 @@ public class GameScene implements ApplicationListener, Observer {
                             TextureLoader.getTileTexture(tsumohai));
 
                     this.playerTsumohai[p] = instance;
+                } else {
+                    this.playerTsumohai[p] = null;
                 }
                 this.changes[p].tsumoHai = false;
             }

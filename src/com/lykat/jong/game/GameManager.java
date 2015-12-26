@@ -113,6 +113,9 @@ public class GameManager implements GameEventListener {
         }
     }
 
+    /**
+     * Do NOT call this method.
+     */
     void asyncHandleEvent(GameEvent event) {
         // TODO: Timeouts
         final GameEventType eventType = event.getEventType();
