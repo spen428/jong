@@ -96,7 +96,7 @@ public class GameSceneTest extends GameScene implements InputProcessor {
 		StringBuilder sb = new StringBuilder("Render took ");
 		sb.append(finishTime).append("ns");
 		LOGGER.log(Level.FINEST, sb.toString());
-		LOGGER.log(Level.FINER, "FPS: " + Gdx.graphics.getFramesPerSecond());
+		LOGGER.log(Level.FINEST, "FPS: " + Gdx.graphics.getFramesPerSecond());
 	}
 
 	@Override
@@ -200,7 +200,7 @@ public class GameSceneTest extends GameScene implements InputProcessor {
 		handler.setFormatter(new SimpleFormatter());
 		handler.setLevel(Level.ALL);
 		logger.addHandler(handler);
-		logger.setLevel(Level.FINEST);
+		logger.setLevel(Level.FINER);
 		logger.log(Level.FINER, "Graphics logger initialised.");
 
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();

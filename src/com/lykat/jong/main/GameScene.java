@@ -73,7 +73,7 @@ public class GameScene implements ApplicationListener, Observer {
     protected AssetManager assets;
 
     /* Model instances */
-    protected Array<ModelInstance> instances = new Array<ModelInstance>();
+    protected Array<ModelInstance> instances = new Array<>();
     protected Array<ModelInstance> liveWallTiles, deadWallTiles;
     protected ModelInstance[] playerTsumohai;
     protected ModelInstance[][] playerDiscards, playerHands, playerMelds;
@@ -93,42 +93,43 @@ public class GameScene implements ApplicationListener, Observer {
 
     @Override
     public void create() {
-        font = new BitmapFont(Gdx.files.internal("res/arial-15.fnt"),
+        this.font = new BitmapFont(Gdx.files.internal("res/arial-15.fnt"),
                 Gdx.files.internal("res/arial-15.png"), false, true);
-        spriteBatch = new SpriteBatch();
-        modelBatch = new ModelBatch();
-        environment = new Environment();
-        environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f,
-                0.4f, 0.4f, 1f));
-        environment.add(new DirectionalLight().set(2.8f, 0.8f, 0.8f, -1f,
+        this.spriteBatch = new SpriteBatch();
+        this.modelBatch = new ModelBatch();
+        this.environment = new Environment();
+        this.environment.set(new ColorAttribute(ColorAttribute.AmbientLight,
+                0.4f, 0.4f, 0.4f, 1f));
+        this.environment.add(new DirectionalLight().set(2.8f, 0.8f, 0.8f, -1f,
                 -0.8f, -0.2f));
 
-        cam = new PerspectiveCamera(67, Gdx.graphics.getWidth(),
+        this.cam = new PerspectiveCamera(67, Gdx.graphics.getWidth(),
                 Gdx.graphics.getHeight());
-        cam.near = 1f;
-        cam.far = 15000f;
-        cam.position.set(PLAYER_CAM_POS);
-        cam.lookAt(0, 0, 0);
-        cam.update();
+        this.cam.near = 1f;
+        this.cam.far = 15000f;
+        this.cam.position.set(this.PLAYER_CAM_POS);
+        this.cam.lookAt(0, 0, 0);
+        this.cam.update();
 
-        assets = new AssetManager();
-        for (String path : MODELS) {
-            assets.load(path, Model.class);
+        this.assets = new AssetManager();
+        for (String path : this.MODELS) {
+            this.assets.load(path, Model.class);
         }
-        loading = true;
-        changed = true;
+        this.loading = true;
+        this.changed = true;
     }
 
     private void rotateAboutCenter(Matrix4 matrix, float degrees) {
         Vector3 pos = new Vector3();
         matrix.getTranslation(pos);
-        matrix.setToTranslation(CENTER_POS);
+        matrix.setToTranslation(this.CENTER_POS);
         matrix.rotate(new Vector3(0, 0, 1), degrees);
-        pos = pos.sub(CENTER_POS);
+        pos = pos.sub(this.CENTER_POS);
         matrix.translate(pos);
     }
 
-    private boolean setTileFace(ModelInstance tileInstance, Texture faceTexture) {
+    private static boolean setTileFace(ModelInstance tileInstance,
+            Texture faceTexture) {
         TextureAttribute textureAttr = new TextureAttribute(
                 TextureAttribute.Diffuse, faceTexture);
         /* Find the index of the "face" mesh part. */
@@ -150,21 +151,21 @@ public class GameScene implements ApplicationListener, Observer {
     }
 
     private void initVars() {
-        int numPlayers = game.getPlayers().length;
+        int numPlayers = this.game.getPlayers().length;
 
-        playerTsumohai = new ModelInstance[numPlayers];
-        playerDiscards = new ModelInstance[numPlayers][];
-        playerHands = new ModelInstance[numPlayers][];
-        playerMelds = new ModelInstance[numPlayers][];
+        this.playerTsumohai = new ModelInstance[numPlayers];
+        this.playerDiscards = new ModelInstance[numPlayers][];
+        this.playerHands = new ModelInstance[numPlayers][];
+        this.playerMelds = new ModelInstance[numPlayers][];
         for (int p = 0; p < numPlayers; p++) {
-            playerDiscards[p] = new ModelInstance[GameConstants.MAX_DISCARDS_PER_PLAYER];
-            playerHands[p] = new ModelInstance[GameConstants.NUM_HAND_TILES];
-            playerMelds[p] = new ModelInstance[GameConstants.MAX_OPEN_MELDS];
+            this.playerDiscards[p] = new ModelInstance[GameConstants.MAX_DISCARDS_PER_PLAYER];
+            this.playerHands[p] = new ModelInstance[GameConstants.NUM_HAND_TILES];
+            this.playerMelds[p] = new ModelInstance[GameConstants.MAX_OPEN_MELDS];
         }
 
-        int numLiveWallTiles = game.getWall().getNumRemainingDraws();
-        liveWallTiles = new Array<ModelInstance>(true, numLiveWallTiles);
-        deadWallTiles = new Array<ModelInstance>(true, Wall.NUM_DEADWALL_TILES);
+        int numLiveWallTiles = this.game.getWall().getNumRemainingDraws();
+        this.liveWallTiles = new Array<>(true, numLiveWallTiles);
+        this.deadWallTiles = new Array<>(true, Wall.NUM_DEADWALL_TILES);
     }
 
     private void loadGraphics() {
@@ -177,7 +178,7 @@ public class GameScene implements ApplicationListener, Observer {
                     new Material(ColorAttribute.createDiffuse(Color.NAVY)),
                     Usage.Position | Usage.Normal);
             ModelInstance instance = new ModelInstance(playingSurface);
-            instances.add(instance);
+            this.instances.add(instance);
         }
 
         // for (String path : MODELS) {
@@ -191,7 +192,7 @@ public class GameScene implements ApplicationListener, Observer {
         float tileHG = TILE_HEIGHT_MM + TILE_GAP_MM;
         float tileTG = TILE_THICKNESS_MM + TILE_GAP_MM;
 
-        Player[] players = game.getPlayers();
+        Player[] players = this.game.getPlayers();
 
         /* Walls */
         // TODO
@@ -206,18 +207,19 @@ public class GameScene implements ApplicationListener, Observer {
                     float yPos = -WALL_TILES_Y_OFFSET_MM;
                     float zPos = z * tileTG;
                     instance.transform.setToWorld(
-                            new Vector3(xPos, yPos, zPos), FORWARD, UP);
+                            new Vector3(xPos, yPos, zPos), this.FORWARD,
+                            this.UP);
 
                     /* Rotate into place */
                     rotateAboutCenter(instance.transform, p * 90);
                     instance.transform.rotate(0, 0, 1, 90);
 
-                    instances.add(instance);
+                    this.instances.add(instance);
                 }
             }
         }
 
-        loading = false;
+        this.loading = false;
     }
 
     private void loadTiles() {
@@ -225,7 +227,7 @@ public class GameScene implements ApplicationListener, Observer {
         final float tileHG = TILE_HEIGHT_MM + TILE_GAP_MM;
         final float tileTG = TILE_THICKNESS_MM + TILE_GAP_MM;
 
-        final Player[] players = game.getPlayers();
+        final Player[] players = this.game.getPlayers();
 
         /* Hands */
         for (int p = 0; p < players.length; p++) {
@@ -238,17 +240,18 @@ public class GameScene implements ApplicationListener, Observer {
             final int numHandTiles = player.getHand().size();
             float halfWidth = ((numHandTiles * (tileWG)) - TILE_GAP_MM) / 2;
 
-            for (int x = 0; x < playerHands[p].length; x++) {
+            for (int x = 0; x < this.playerHands[p].length; x++) {
                 if (x >= numHandTiles) {
-                    if (playerHands[p][x] != null) {
-                        playerHands[p][x] = null;
+                    if (this.playerHands[p][x] != null) {
+                        this.playerHands[p][x] = null;
                     }
                     continue;
                 }
 
                 Tile tile = player.getHand().get(x);
-                if (playerHands[p][x] != null
-                        && playerHands[p][x].userData.equals(tile.toString())) {
+                if (this.playerHands[p][x] != null
+                        && this.playerHands[p][x].userData.equals(tile
+                                .toString())) {
                     continue;
                 }
 
@@ -259,7 +262,7 @@ public class GameScene implements ApplicationListener, Observer {
                 float yPos = -HAND_TILES_Y_OFFSET_MM;
                 float zPos = 0;
                 instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
-                        FORWARD, UP);
+                        this.FORWARD, this.UP);
 
                 /* Rotate so it ends up in front of #p, then rotate to face */
                 rotateAboutCenter(instance.transform, p * 90);
@@ -268,14 +271,14 @@ public class GameScene implements ApplicationListener, Observer {
                 instance.userData = tile.toString();
                 setTileFace(instance, TextureLoader.getTileTexture(tile));
 
-                playerHands[p][x] = instance;
+                this.playerHands[p][x] = instance;
             }
 
             /* Tsumo-hai */
             Tile tsumohai = player.getTsumoHai();
             if (tsumohai != null) {
-                if (playerTsumohai[p] != null
-                        && playerTsumohai[p].userData.equals(tsumohai
+                if (this.playerTsumohai[p] != null
+                        && this.playerTsumohai[p].userData.equals(tsumohai
                                 .toString())) {
                     continue;
                 }
@@ -294,7 +297,7 @@ public class GameScene implements ApplicationListener, Observer {
                 }
 
                 instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
-                        FORWARD, UP);
+                        this.FORWARD, this.UP);
 
                 /* Rotate into place */
                 rotateAboutCenter(instance.transform, p * 90);
@@ -306,7 +309,7 @@ public class GameScene implements ApplicationListener, Observer {
                 instance.userData = tsumohai.toString();
                 setTileFace(instance, TextureLoader.getTileTexture(tsumohai));
 
-                playerTsumohai[p] = instance;
+                this.playerTsumohai[p] = instance;
             }
 
             // /* Open melds */
@@ -341,31 +344,30 @@ public class GameScene implements ApplicationListener, Observer {
                 float yPos = -RIICHI_STICK_Y_OFFSET_MM;
                 float zPos = RIICHI_HEIGHT_MM;
                 instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
-                        FORWARD, UP);
+                        this.FORWARD, this.UP);
 
                 /* Rotate into place */
                 rotateAboutCenter(instance.transform, p * 90);
 
-                instances.add(instance);
+                this.instances.add(instance);
             }
 
             /* Discards */
             if (player.getDiscards().size() > 0) {
                 halfWidth = ((DISCARD_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
-                LOGGER.fine("discards length: " + playerDiscards.length);
-                for (int i = 0; i < playerDiscards[p].length; i++) {
+                for (int i = 0; i < this.playerDiscards[p].length; i++) {
                     if (i >= player.getDiscards().size()) {
-                        if (playerDiscards[p][i] != null) {
+                        if (this.playerDiscards[p][i] != null) {
                             /* Tile should be cleared */
-                            playerDiscards[p][i] = null;
+                            this.playerDiscards[p][i] = null;
                         }
                         LOGGER.finer("Tile at [" + p + "][" + i + "] cleared.");
                         continue;
                     }
 
                     Tile tile = player.getDiscards().get(i);
-                    if (playerDiscards[p][i] != null
-                            && playerDiscards[p][i].userData.equals(tile
+                    if (this.playerDiscards[p][i] != null
+                            && this.playerDiscards[p][i].userData.equals(tile
                                     .toString())) {
                         /* Tile has already been rendered */
                         LOGGER.finer("Tile " + tile.toString() + " skipped: "
@@ -387,7 +389,8 @@ public class GameScene implements ApplicationListener, Observer {
                     float yPos = -DISCARD_TILES_Y_OFFSET_MM - (y * tileHG);
                     float zPos = TILE_THICKNESS_MM;
                     instance.transform.setToWorld(
-                            new Vector3(xPos, yPos, zPos), FORWARD, UP);
+                            new Vector3(xPos, yPos, zPos), this.FORWARD,
+                            this.UP);
 
                     /* Rotate into place */
                     rotateAboutCenter(instance.transform, p * 90);
@@ -395,7 +398,7 @@ public class GameScene implements ApplicationListener, Observer {
                             .rotate(0, 0, -1, 90);
                     instance.userData = tile.toString();
                     setTileFace(instance, TextureLoader.getTileTexture(tile));
-                    playerDiscards[p][i] = instance;
+                    this.playerDiscards[p][i] = instance;
                     LOGGER.fine("Tile " + tile.toString() + " rendered.");
                 }
             }
@@ -404,19 +407,19 @@ public class GameScene implements ApplicationListener, Observer {
 
     @Override
     public void render() {
-        if (setGame != null) {
-            game = setGame;
-            setGame = null;
-            loading = true;
+        if (this.setGame != null) {
+            this.game = this.setGame;
+            this.setGame = null;
+            this.loading = true;
         }
 
-        if (game != null) {
-            if (loading) { // && assets.update()
+        if (this.game != null) {
+            if (this.loading) { // && assets.update()
                 initVars();
                 loadGraphics();
             }
-            if (changed) { // TODO: Update based on GameEvent fired
-                changed = false;
+            if (this.changed) { // TODO: Update based on GameEvent fired
+                this.changed = false;
                 loadTiles();
             }
 
@@ -424,63 +427,67 @@ public class GameScene implements ApplicationListener, Observer {
                     Gdx.graphics.getHeight());
             Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
-            modelBatch.begin(cam);
+            this.modelBatch.begin(this.cam);
 
-            modelBatch.render(instances, environment);
-            modelBatch.render(liveWallTiles, environment);
-            modelBatch.render(deadWallTiles, environment);
-            for (int p = 0; p < playerTsumohai.length; p++) {
-                if (playerTsumohai[p] != null) {
-                    modelBatch.render(playerTsumohai[p], environment);
+            this.modelBatch.render(this.instances, this.environment);
+            this.modelBatch.render(this.liveWallTiles, this.environment);
+            this.modelBatch.render(this.deadWallTiles, this.environment);
+            for (int p = 0; p < this.playerTsumohai.length; p++) {
+                if (this.playerTsumohai[p] != null) {
+                    this.modelBatch.render(this.playerTsumohai[p],
+                            this.environment);
                 }
-                for (ModelInstance r : playerDiscards[p]) {
+                for (ModelInstance r : this.playerDiscards[p]) {
                     if (r != null) {
-                        modelBatch.render(r, environment);
+                        this.modelBatch.render(r, this.environment);
                     }
                 }
-                for (ModelInstance r : playerMelds[p]) {
+                for (ModelInstance r : this.playerMelds[p]) {
                     if (r != null) {
-                        modelBatch.render(r, environment);
+                        this.modelBatch.render(r, this.environment);
                     }
                 }
-                for (ModelInstance r : playerHands[p]) {
+                for (ModelInstance r : this.playerHands[p]) {
                     if (r != null) {
-                        modelBatch.render(r, environment);
+                        this.modelBatch.render(r, this.environment);
                     }
                 }
             }
 
-            modelBatch.end();
+            this.modelBatch.end();
 
             /* Overlay */
-            spriteBatch.setProjectionMatrix(cam.combined);
-            spriteBatch.begin();
-            font.setScale(2);
-            font.setColor(Color.WHITE);
-            font.draw(spriteBatch, "Tiles Remaining: "
-                    + game.getWall().getNumRemainingDraws(), 0, 0);
-            spriteBatch.end();
+            this.spriteBatch.setProjectionMatrix(this.cam.combined);
+            this.spriteBatch.begin();
+            this.font.setScale(2);
+            this.font.setColor(Color.WHITE);
+            this.font.draw(this.spriteBatch, "Tiles Remaining: "
+                    + this.game.getWall().getNumRemainingDraws(), 0, 0);
+            this.spriteBatch.end();
 
         }
     }
 
     @Override
     public void dispose() {
-        modelBatch.dispose();
-        instances.clear();
-        assets.dispose();
+        this.modelBatch.dispose();
+        this.instances.clear();
+        this.assets.dispose();
     }
 
     @Override
     public void pause() {
+        // TODO: Unimplemented
     }
 
     @Override
     public void resize(int arg0, int arg1) {
+        // TODO: Unimplemented
     }
 
     @Override
     public void resume() {
+        // TODO: Unimplemented
     }
 
     /**
@@ -494,6 +501,6 @@ public class GameScene implements ApplicationListener, Observer {
     @Override
     public void update(Observable o, Object obj) {
         LOGGER.log(Level.FINER, "Graphical update called");
-        changed = true;
+        this.changed = true;
     }
 }
