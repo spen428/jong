@@ -3,6 +3,14 @@ Jong
 
 A (real) Mahjong game written in Java.
 
+Dependencies
+------------
+- JDK 1.7+
+- gdx.jar
+- gdx-natives.jar
+- gdx-backend-lwjgl.jar
+- gdx-backend-lwjgl-natives.jar
+
 Acknowledgements
 ----------------
 
