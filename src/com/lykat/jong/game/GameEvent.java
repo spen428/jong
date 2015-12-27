@@ -42,7 +42,8 @@ public class GameEvent extends EventObject {
         CALLED_CHII,
         CALLED_PON,
         DECLARED_BONUS_TILE,
-        DECLARED_KAN;
+        DECLARED_KAN,
+        FLIPPED_DORA_HYOUJI;
 
         /**
          * Returns true if the event requires it to be the player's turn.

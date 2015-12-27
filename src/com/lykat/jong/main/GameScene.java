@@ -51,6 +51,7 @@ import com.badlogic.gdx.graphics.g3d.model.MeshPart;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
 import com.lykat.jong.game.Game;
 import com.lykat.jong.game.GameEvent;
@@ -101,6 +102,9 @@ public class GameScene implements ApplicationListener, Observer {
     protected final Vector3 RIGHT = new Vector3(1, 0, 0);
     protected final Vector3 FORWARD = new Vector3(0, 1, 0);
 
+    private int flippedDora = 0;
+    private int visibleDora = 0;
+
     @Override
     public void create() {
         this.font = new BitmapFont(Gdx.files.internal("res/arial-15.fnt"),
@@ -131,12 +135,45 @@ public class GameScene implements ApplicationListener, Observer {
         this.changed = true;
     }
 
+    /**
+     * Calculate and return the centerpoint of (the bounding box of) a given
+     * ModelInstance
+     * 
+     * @param instance
+     *            the ModelInstance
+     * @return a Vector3 representing the centerpoint
+     */
+    private static Vector3 getCenterOfBoundingBox(ModelInstance instance) {
+        BoundingBox bb = new BoundingBox();
+        instance.calculateBoundingBox(bb);
+        bb = bb.mul(instance.transform);
+        Vector3 center = new Vector3();
+        bb.getCenter(center);
+        return center;
+    }
+
+    /**
+     * Rotate a ModelInstance 180 degrees about its horizontal axis.
+     * 
+     * @param instance
+     *            the instance to flip
+     */
+    private static void flip(ModelInstance instance) {
+        Vector3 center = getCenterOfBoundingBox(instance);
+        rotateAbout(center, instance.transform, new Vector3(1, 0, 0), 180);
+    }
+
     private void rotateAboutCenter(Matrix4 matrix, float degrees) {
+        rotateAbout(this.CENTER_POS, matrix, new Vector3(0, 0, 1), degrees);
+    }
+
+    private static void rotateAbout(Vector3 about, Matrix4 matrix,
+            Vector3 rotationAxis, float degrees) {
         Vector3 pos = new Vector3();
         matrix.getTranslation(pos);
-        matrix.setToTranslation(this.CENTER_POS);
-        matrix.rotate(new Vector3(0, 0, 1), degrees);
-        pos = pos.sub(this.CENTER_POS);
+        matrix.setToTranslation(about);
+        matrix.rotate(rotationAxis, degrees);
+        pos = pos.sub(about);
         matrix.translate(pos);
     }
 
@@ -214,8 +251,11 @@ public class GameScene implements ApplicationListener, Observer {
         Player[] players = this.game.getPlayers();
 
         /* Walls */
-        float halfWidth = ((WALL_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
-        int numWallTiles = 0;
+        final float halfWidth = ((WALL_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
+        final int totalLiveTiles = 136 - 14 - (13 * 4) - 1; // TODO
+        final int totalTiles = players.length * WALL_WIDTH_TILES
+                * WALL_HEIGHT_TILES;
+        int counter = 0;
         for (int p = 0; p < players.length; p++) {
             for (int x = 0; x < WALL_WIDTH_TILES; x++) {
                 for (int z = 0; z < WALL_HEIGHT_TILES; z++) {
@@ -233,15 +273,16 @@ public class GameScene implements ApplicationListener, Observer {
                     rotateAboutCenter(instance.transform, p * 90);
                     instance.transform.rotate(0, 0, 1, 90);
 
-                    if (numWallTiles < Wall.NUM_DEADWALL_TILES) {
+                    if (counter >= totalTiles - Wall.NUM_DEADWALL_TILES) {
                         this.deadWallTiles.add(instance);
-                    } else {
+                    } else if (counter < totalLiveTiles) {
                         this.liveWallTiles.add(instance);
                     }
-                    numWallTiles++;
+                    counter++;
                 }
             }
         }
+        this.flippedDora++; // First render loop should flip dora.
 
         this.loading = false;
     }
@@ -447,6 +488,16 @@ public class GameScene implements ApplicationListener, Observer {
                 this.changes[p].discards = false;
             }
         }
+
+        /* Dead wall */
+        while (this.visibleDora < this.flippedDora) {
+            ModelInstance doraHyouji = this.deadWallTiles
+                    .get(5 + 2 * (this.visibleDora));
+            setTileFace(doraHyouji, TextureLoader.getTileTexture(this.game
+                    .getWall().getDoraIndicators()[this.visibleDora]));
+            flip(doraHyouji);
+            this.visibleDora++;
+        }
     }
 
     @Override
@@ -617,6 +668,9 @@ public class GameScene implements ApplicationListener, Observer {
         case DREW_FROM_LIVE_WALL:
             this.changes[idx].tsumoHai = true;
             this.liveWallTiles.pop();
+            break;
+        case FLIPPED_DORA_HYOUJI:
+            this.flippedDora++;
             break;
         default:
             break;

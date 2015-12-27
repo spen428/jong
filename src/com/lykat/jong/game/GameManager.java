@@ -184,7 +184,8 @@ public class GameManager implements GameEventListener {
                 } else if (eventType == GameEventType.DECLARE_RIICHI) {
                     declareRiichi(event);
                 } else if (eventType == GameEventType.DECLARE_KAN) {
-                    declareKan(event);
+                    toFlip++;
+                    // declareKan(event);
                 } else if (eventType == GameEventType.DECLARE_BONUS_TILE) {
                     declareBonusTile(event);
                 } else if (eventType == GameEventType.DECLARE_TSUMO) {
@@ -543,7 +544,8 @@ public class GameManager implements GameEventListener {
         fireEventAllPlayers(GameEventType.DISCARDED, player);
 
         while (this.toFlip > 0) {
-            this.game.getWall().flipDora();
+            Tile newHyouji = this.game.getWall().flipDora();
+            fireEventAllPlayers(GameEventType.FLIPPED_DORA_HYOUJI, newHyouji);
             this.toFlip--;
         }
         this.game.setGameState(GameState.WAITING_FOR_CALLERS);

@@ -101,6 +101,9 @@ public class PlayerController extends AbstractPlayerController {
         case Keys.NUM_1:
             super.fireEvent(GameEventType.OK);
             break;
+        case Keys.J:
+            super.fireEvent(GameEventType.DECLARE_KAN);
+            break;
         default:
             break;
         }

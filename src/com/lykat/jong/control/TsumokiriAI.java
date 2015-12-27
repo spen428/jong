@@ -48,7 +48,7 @@ public class TsumokiriAI extends AbstractPlayerController {
 
     private static void sleep() {
         try {
-            Thread.sleep(200);
+            Thread.sleep(100);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
