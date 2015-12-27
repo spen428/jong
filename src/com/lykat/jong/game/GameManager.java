@@ -167,15 +167,15 @@ public class GameManager implements GameEventListener {
                 player.deal(this.game.getWall().deadWallDraw());
                 this.game.setDeadDraw(true);
                 this.game.setGameState(GameState.WAITING);
-                fireEvent(this.game.getTurn(), GameEventType.TURN_STARTED,
-                        gameState);
+                fireEventAllPlayers(GameEventType.DREW_FROM_DEAD_WALL, player);
+                fireEvent(player, GameEventType.TURN_STARTED, gameState);
             }
         } else if (gameState == GameState.MUST_DRAW_LIVE) {
             if (eventType == GameEventType.DRAW_FROM_LIVE_WALL && isTurn) {
                 player.deal(this.game.getWall().draw());
                 this.game.setGameState(GameState.WAITING);
-                fireEvent(this.game.getTurn(), GameEventType.TURN_STARTED,
-                        gameState);
+                fireEventAllPlayers(GameEventType.DREW_FROM_LIVE_WALL, player);
+                fireEvent(player, GameEventType.TURN_STARTED, gameState);
             }
         } else if (gameState == GameState.WAITING) {
             if (isTurn) {
@@ -540,6 +540,7 @@ public class GameManager implements GameEventListener {
         this.game.setDeadDraw(false);
         LOGGER.log(Level.FINER, String.format("Player %s discarded tile %s",
                 player.getName(), tile.toString()));
+        fireEventAllPlayers(GameEventType.DISCARDED, player);
 
         while (this.toFlip > 0) {
             this.game.getWall().flipDora();

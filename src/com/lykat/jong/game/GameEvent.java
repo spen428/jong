@@ -33,7 +33,16 @@ public class GameEvent extends EventObject {
         PLAYER_CONNECT,
         ROUND_STARTED,
         SENT_MESSAGE,
-        OK;
+        OK,
+        DREW_FROM_DEAD_WALL,
+        DREW_FROM_LIVE_WALL,
+        DISCARDED,
+        DECLARED_RIICHI,
+        CALLED_KAN,
+        CALLED_CHII,
+        CALLED_PON,
+        DECLARED_BONUS_TILE,
+        DECLARED_KAN;
 
         /**
          * Returns true if the event requires it to be the player's turn.

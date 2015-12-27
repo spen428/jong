@@ -214,11 +214,11 @@ public class GameScene implements ApplicationListener, Observer {
         Player[] players = this.game.getPlayers();
 
         /* Walls */
-        // TODO
         float halfWidth = ((WALL_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
+        int numWallTiles = 0;
         for (int p = 0; p < players.length; p++) {
-            for (int z = 0; z < WALL_HEIGHT_TILES; z++) {
-                for (int x = 0; x < WALL_WIDTH_TILES; x++) {
+            for (int x = 0; x < WALL_WIDTH_TILES; x++) {
+                for (int z = 0; z < WALL_HEIGHT_TILES; z++) {
                     ModelInstance instance = new ModelInstance(MODEL_TILE);
 
                     /* Move into position */
@@ -233,7 +233,12 @@ public class GameScene implements ApplicationListener, Observer {
                     rotateAboutCenter(instance.transform, p * 90);
                     instance.transform.rotate(0, 0, 1, 90);
 
-                    this.instances.add(instance);
+                    if (numWallTiles < Wall.NUM_DEADWALL_TILES) {
+                        this.deadWallTiles.add(instance);
+                    } else {
+                        this.liveWallTiles.add(instance);
+                    }
+                    numWallTiles++;
                 }
             }
         }
@@ -248,6 +253,7 @@ public class GameScene implements ApplicationListener, Observer {
 
         final Player[] players = this.game.getPlayers();
 
+        /* Player-specific stuff */
         for (int p = 0; p < players.length; p++) {
             final Player player = players[p];
             if (player == null) {
@@ -573,36 +579,44 @@ public class GameScene implements ApplicationListener, Observer {
             return;
         }
 
-        Player player = event.getSource();
-        Player[] players = this.game.getPlayers();
-        int idx = 0;
-        while (players[idx] != player) {
-            idx++;
-            if (idx >= players.length) {
-                // Event was from a non-player
-                return;
+        int idx = -1;
+        Object obj = event.getEventData();
+        if (obj instanceof Player) {
+            Player player = (Player) obj;
+            Player[] players = this.game.getPlayers();
+            idx = 0;
+            while (players[idx] != player) {
+                idx++;
+                if (idx >= players.length) {
+                    // Event was from a non-player
+                    return;
+                }
             }
         }
 
         switch (event.getEventType()) {
-        case CALL_CHII:
-        case CALL_KAN:
-        case CALL_PON:
-        case DECLARE_BONUS_TILE:
-        case DECLARE_KAN:
+        case CALLED_CHII:
+        case CALLED_KAN:
+        case CALLED_PON:
+        case DECLARED_BONUS_TILE:
+        case DECLARED_KAN:
             this.changes[idx].calls = true;
             break;
-        case DECLARE_RIICHI:
+        case DECLARED_RIICHI:
             break;
-        case DISCARD:
+        case DISCARDED:
             // TODO: Distinguish between tsumokiri and nakakiri
             this.changes[idx].tsumoHai = true;
             this.changes[idx].hand = true;
             this.changes[idx].discards = true;
             break;
-        case DRAW_FROM_DEAD_WALL:
-        case DRAW_FROM_LIVE_WALL:
+        case DREW_FROM_DEAD_WALL:
             this.changes[idx].tsumoHai = true;
+            this.deadWallTiles.pop();
+            break;
+        case DREW_FROM_LIVE_WALL:
+            this.changes[idx].tsumoHai = true;
+            this.liveWallTiles.pop();
             break;
         default:
             break;

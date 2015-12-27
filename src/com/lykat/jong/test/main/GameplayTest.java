@@ -37,7 +37,6 @@ public class GameplayTest extends GameScene {
         for (int i = 1; i < 4; i++) {
             TsumokiriAI ai = new TsumokiriAI("AI " + i, this.gameManager);
             ai.connect();
-            ai.addObserver(this); // TODO: This should be handled elsewhere
         }
 
         super.setGame(this.game);
