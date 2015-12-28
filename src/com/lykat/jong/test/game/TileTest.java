@@ -115,9 +115,9 @@ public class TileTest {
 
 	@Test
 	public void testIsTermHon() {
-		assertTrue(hatsu1.isTermHon());
-		assertTrue(man9.isTermHon());
-		assertFalse(man2.isTermHon());
+		assertTrue(hatsu1.isYaochuuhai());
+		assertTrue(man9.isYaochuuhai());
+		assertFalse(man2.isYaochuuhai());
 	}
 
 	@Test

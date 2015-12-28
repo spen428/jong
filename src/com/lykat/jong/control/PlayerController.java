@@ -55,6 +55,7 @@ public class PlayerController extends AbstractPlayerController {
                 /* Available meld call */
                 Call call = (Call) data;
                 // TODO: Handle call event
+                LOGGER.info("Call available: " + call.toString());
             } else {
                 LOGGER.log(Level.FINER,
                         "Received GameEvent: " + type.toString());
@@ -98,8 +99,17 @@ public class PlayerController extends AbstractPlayerController {
         case Keys.F:
             super.discard(-1);
             break;
-        case Keys.NUM_1:
+        case Keys.D:
+            super.skipCall();
+            break;
+        case Keys.S:
+            super.fireEvent(GameEventType.CALL_PON);
+            break;
+        case Keys.O:
             super.fireEvent(GameEventType.OK);
+            break;
+        case Keys.NUM_1:
+            super.discard(0);
             break;
         default:
             break;

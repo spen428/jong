@@ -1,9 +1,8 @@
 package com.lykat.jong.control;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.badlogic.gdx.Input.Keys;
+import com.lykat.jong.game.Call;
 import com.lykat.jong.game.GameEvent;
 import com.lykat.jong.game.GameEvent.GameEventType;
 import com.lykat.jong.game.GameManager;
@@ -38,9 +37,15 @@ public class TsumokiriAI extends AbstractPlayerController {
                         super.fireEvent(GameEventType.DRAW_FROM_DEAD_WALL);
                         sleep();
                     }
+                } else if (type == GameEventType.TURN_FINISHED) {
+                    //
                 }
+            } else if (data instanceof Call) {
+                /* Available meld call */
+                // Call call = (Call) data;
+                super.skipCall();
             }
-            super.tsumoKiri(); // TODO: Fire only when needed
+            super.tsumoKiri();
         }
 
         super.notifyObservers(event);
@@ -56,19 +61,6 @@ public class TsumokiriAI extends AbstractPlayerController {
 
     @Override
     public boolean keyDown(int keycode) {
-        LOGGER.log(Level.FINEST, "keyDown event: " + keycode);
-        switch (keycode) {
-        case Keys.NUM_1:
-            LOGGER.log(Level.FINER, "Firing event: "
-                    + GameEventType.PLAYER_CONNECT.toString());
-            super.fireEvent(GameEventType.PLAYER_CONNECT, this);
-            break;
-        case Keys.F:
-            super.discard(-1);
-            break;
-        default:
-            break;
-        }
         return false;
     }
 

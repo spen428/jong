@@ -34,6 +34,7 @@ public class GameEvent extends EventObject {
         ROUND_STARTED,
         SENT_MESSAGE,
         OK,
+        /* "Past-tense" game events */
         DREW_FROM_DEAD_WALL,
         DREW_FROM_LIVE_WALL,
         DISCARDED,

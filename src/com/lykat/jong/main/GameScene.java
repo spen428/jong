@@ -55,6 +55,7 @@ import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
 import com.lykat.jong.game.Game;
 import com.lykat.jong.game.GameEvent;
+import com.lykat.jong.game.Meld;
 import com.lykat.jong.game.Player;
 import com.lykat.jong.game.Tile;
 import com.lykat.jong.game.Wall;
@@ -76,7 +77,7 @@ public class GameScene implements ApplicationListener, Observer {
     protected ModelBatch modelBatch;
     protected AssetManager assets;
 
-    protected GameSceneChanges[] changes;
+    protected GameSceneChanges changes;
 
     /* Model instances */
     protected Array<ModelInstance> instances = new Array<>();
@@ -158,13 +159,13 @@ public class GameScene implements ApplicationListener, Observer {
      * @param instance
      *            the instance to flip
      */
-    private static void flip(ModelInstance instance) {
+    private void flip(ModelInstance instance) {
         Vector3 center = getCenterOfBoundingBox(instance);
-        rotateAbout(center, instance.transform, new Vector3(1, 0, 0), 180);
+        rotateAbout(center, instance.transform, this.RIGHT, 180);
     }
 
     private void rotateAboutCenter(Matrix4 matrix, float degrees) {
-        rotateAbout(this.CENTER_POS, matrix, new Vector3(0, 0, 1), degrees);
+        rotateAbout(this.CENTER_POS, matrix, this.UP, degrees);
     }
 
     private static void rotateAbout(Vector3 about, Matrix4 matrix,
@@ -211,12 +212,11 @@ public class GameScene implements ApplicationListener, Observer {
         this.playerDiscards = new ModelInstance[numPlayers][];
         this.playerHands = new ModelInstance[numPlayers][];
         this.playerMelds = new ModelInstance[numPlayers][];
-        this.changes = new GameSceneChanges[numPlayers];
+        this.changes = new GameSceneChanges();
         for (int p = 0; p < numPlayers; p++) {
             this.playerDiscards[p] = new ModelInstance[GameConstants.MAX_DISCARDS_PER_PLAYER];
             this.playerHands[p] = new ModelInstance[GameConstants.NUM_HAND_TILES];
             this.playerMelds[p] = new ModelInstance[GameConstants.MAX_OPEN_MELDS];
-            this.changes[p] = new GameSceneChanges();
         }
 
         int numLiveWallTiles = this.game.getWall().getNumRemainingDraws();
@@ -306,7 +306,7 @@ public class GameScene implements ApplicationListener, Observer {
             float halfWidth = ((numHandTiles * (tileWG)) - TILE_GAP_MM) / 2;
 
             /* Hands */
-            if (this.changes[p].hand) {
+            if (this.changes.hand) {
                 for (int x = 0; x < this.playerHands[p].length; x++) {
                     if (x >= numHandTiles) {
                         if (this.playerHands[p][x] != null) {
@@ -342,11 +342,10 @@ public class GameScene implements ApplicationListener, Observer {
 
                     this.playerHands[p][x] = instance;
                 }
-                this.changes[p].hand = false;
             }
 
             /* Tsumo-hai */
-            if (this.changes[p].tsumoHai) {
+            if (this.changes.tsumoHai) {
                 Tile tsumohai = player.getTsumoHai();
                 if (tsumohai != null) {
                     if (this.playerTsumohai[p] != null
@@ -388,13 +387,17 @@ public class GameScene implements ApplicationListener, Observer {
                 } else {
                     this.playerTsumohai[p] = null;
                 }
-                this.changes[p].tsumoHai = false;
             }
 
             /* Open melds */
-            if (this.changes[p].calls) {
-                for (int y = 0; y < 4; y++) {
-                    for (int x = 0; x < 4; x++) {
+            if (this.changes.calls) {
+                int y = 0;
+                for (Meld meld : player.getMelds()) {
+                    // TODO: Rotate call tile
+                    Tile callTile = meld.getCallTile();
+                    Tile[] tiles = meld.getTiles();
+                    int x = 0;
+                    for (Tile tile : tiles) {
                         ModelInstance instance = new ModelInstance(MODEL_TILE);
 
                         /* Move into position */
@@ -402,19 +405,23 @@ public class GameScene implements ApplicationListener, Observer {
                         float yPos = -OPEN_MELDS_Y_OFFSET_MM + (y * tileHG);
                         float zPos = TILE_THICKNESS_MM;
                         instance.transform.setToWorld(new Vector3(xPos, yPos,
-                                zPos), FORWARD, UP);
+                                zPos), this.FORWARD, this.UP);
 
                         /* Rotate into place */
                         rotateAboutCenter(instance.transform, p * 90);
                         instance.transform.rotate(1, 0, 0, 180).rotate(0, 0,
                                 -1, 90);
 
-                        instances.add(instance);
-                        setTileFace(instance, TextureLoader.getTextureById(0));
+                        this.instances.add(instance);
+                        setTileFace(instance,
+                                TextureLoader.getTileTexture(tile));
+                        x++;
                     }
+                    y++;
                 }
+            }
 
-                // TODO: use final vars
+            if (this.changes.riichi) {
                 /* Riichi Sticks */
                 if (player.isRiichi()) {
                     ModelInstance instance = new ModelInstance(
@@ -433,11 +440,10 @@ public class GameScene implements ApplicationListener, Observer {
 
                     this.instances.add(instance);
                 }
-                this.changes[p].calls = false;
             }
 
             /* Discards */
-            if (this.changes[p].discards && player.getDiscards().size() > 0) {
+            if (this.changes.discards && player.getDiscards().size() > 0) {
                 halfWidth = ((DISCARD_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
                 for (int i = 0; i < this.playerDiscards[p].length; i++) {
                     if (i >= player.getDiscards().size()) {
@@ -485,7 +491,6 @@ public class GameScene implements ApplicationListener, Observer {
                     this.playerDiscards[p][i] = instance;
                     LOGGER.fine("Tile " + tile.toString() + " rendered.");
                 }
-                this.changes[p].discards = false;
             }
         }
 
@@ -498,6 +503,8 @@ public class GameScene implements ApplicationListener, Observer {
             flip(doraHyouji);
             this.visibleDora++;
         }
+
+        this.changes.setFalse();
     }
 
     @Override
@@ -630,43 +637,30 @@ public class GameScene implements ApplicationListener, Observer {
             return;
         }
 
-        int idx = -1;
-        Object obj = event.getEventData();
-        if (obj instanceof Player) {
-            Player player = (Player) obj;
-            Player[] players = this.game.getPlayers();
-            idx = 0;
-            while (players[idx] != player) {
-                idx++;
-                if (idx >= players.length) {
-                    // Event was from a non-player
-                    return;
-                }
-            }
-        }
-
         switch (event.getEventType()) {
-        case CALLED_CHII:
-        case CALLED_KAN:
-        case CALLED_PON:
-        case DECLARED_BONUS_TILE:
-        case DECLARED_KAN:
-            this.changes[idx].calls = true;
+        case CALL_CHII:
+        case CALL_KAN:
+        case CALL_PON:
+        case DECLARE_BONUS_TILE:
+        case DECLARE_KAN:
+            this.changes.calls = true;
+            this.changes.hand = true;
+            this.changes.discards = true;
             break;
         case DECLARED_RIICHI:
             break;
         case DISCARDED:
             // TODO: Distinguish between tsumokiri and nakakiri
-            this.changes[idx].tsumoHai = true;
-            this.changes[idx].hand = true;
-            this.changes[idx].discards = true;
+            this.changes.tsumoHai = true;
+            this.changes.hand = true;
+            this.changes.discards = true;
             break;
         case DREW_FROM_DEAD_WALL:
-            this.changes[idx].tsumoHai = true;
+            this.changes.tsumoHai = true;
             this.deadWallTiles.pop();
             break;
         case DREW_FROM_LIVE_WALL:
-            this.changes[idx].tsumoHai = true;
+            this.changes.tsumoHai = true;
             this.liveWallTiles.pop();
             break;
         case FLIPPED_DORA_HYOUJI:

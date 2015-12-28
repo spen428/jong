@@ -10,7 +10,9 @@ import java.util.logging.Logger;
 import com.lykat.jong.calc.Hand;
 import com.lykat.jong.calc.Yaku;
 import com.lykat.jong.control.AbstractPlayerController;
+import com.lykat.jong.control.TsumokiriAI;
 import com.lykat.jong.game.GameEvent.GameEventType;
+import com.lykat.jong.game.Meld.MeldSource;
 import com.lykat.jong.game.Meld.MeldType;
 
 public class GameManager implements GameEventListener {
@@ -366,17 +368,55 @@ public class GameManager implements GameEventListener {
         }
     }
 
+    private MeldSource getMeldSource(Player caller, Player discarder) {
+        int callerId = -1;
+        int discarderId = -1;
+        for (int i = 0; i < this.players.length; i++) {
+            Player p = this.players[i].getPlayer();
+            if (p == caller) {
+                callerId = i;
+            }
+            if (p == discarder) {
+                discarderId = i;
+            }
+        }
+
+        /* */
+        if (callerId == -1 || discarderId == -1) {
+            return MeldSource.UNKNOWN;
+        }
+
+        // TODO: This breaks for 5-player games, but who plays 5-player jong?
+        int diff = (callerId - discarderId) % this.players.length;
+        if (diff == 0) {
+            return MeldSource.SELF;
+        } else if (diff == 1) {
+            return MeldSource.LEFT;
+        } else if (diff == 2) {
+            return MeldSource.ACROSS;
+        } else {
+            return MeldSource.RIGHT;
+        }
+    }
+
     /**
      * Applies the given call, advancing the game state.
      */
     private void doCall(Call call) {
         Player caller = call.getPlayer();
         Player discarder = this.game.getTurn();
+        Meld meld = call.getMeld();
 
+        if (meld.getMeldSource() == MeldSource.UNKNOWN) {
+            MeldSource meldSource = getMeldSource(caller, discarder);
+            meld = new Meld(meld.getTiles(), meld.getCallTile(), meldSource,
+                    meld.getType());
+        }
         discarder.removeLatestDiscard();
-        caller.addMeld(call.getMeld());
+        caller.addMeld(meld);
 
         fireEvent(discarder, GameEventType.TURN_FINISHED, null);
+        fireEventAllPlayers(call.getCallEvent(), caller);
         this.game.interruptPlayers();
         this.game.setTurn(caller);
 
@@ -639,7 +679,6 @@ public class GameManager implements GameEventListener {
             }
 
             ArrayList<Tile> hand = player.getHand();
-            ArrayList<Meld> melds = player.getMelds();
 
             /* Chii/Pon/Kan calls */
             ArrayList<Meld> callableMelds = Hand.getCallableMelds(hand, tile);
@@ -648,6 +687,7 @@ public class GameManager implements GameEventListener {
             }
 
             /* Ron calls */
+            ArrayList<Meld> melds = player.getMelds();
             if (Hand.getWaits(hand, melds).contains(tile)) {
                 Call ronCall = new Call(player, GameEventType.CALL_RON);
                 if (this.game.getGameState() == GameState.BONUS_TILE_DECLARED

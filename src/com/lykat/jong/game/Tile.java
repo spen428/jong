@@ -97,7 +97,7 @@ public class Tile {
 		return !this.isJihai();
 	}
 
-	public boolean isTermHon() {
+	public boolean isYaochuuhai() {
 		return this.value.isTermHon();
 	}
 
