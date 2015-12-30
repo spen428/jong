@@ -307,6 +307,8 @@ public class GameScene implements ApplicationListener, Observer {
 
             /* Hands */
             if (this.changes.hand) {
+                // TODO: Sort hands
+                // TODO: Prevent gaps in hand
                 for (int x = 0; x < this.playerHands[p].length; x++) {
                     if (x >= numHandTiles) {
                         if (this.playerHands[p][x] != null) {
@@ -323,6 +325,9 @@ public class GameScene implements ApplicationListener, Observer {
                     }
 
                     ModelInstance instance = new ModelInstance(MODEL_TILE);
+                    this.playerHands[p][x] = instance;
+                    instance.userData = tile.toString();
+                    setTileFace(instance, TextureLoader.getTileTexture(tile));
 
                     /* Move into position */
                     float xPos = x * (tileWG) - halfWidth;
@@ -336,11 +341,6 @@ public class GameScene implements ApplicationListener, Observer {
                     rotateAboutCenter(instance.transform, p * 90);
                     instance.transform.rotate(0, -1, 0, 90)
                             .rotate(-1, 0, 0, 90);
-
-                    instance.userData = tile.toString();
-                    setTileFace(instance, TextureLoader.getTileTexture(tile));
-
-                    this.playerHands[p][x] = instance;
                 }
             }
 
@@ -570,7 +570,6 @@ public class GameScene implements ApplicationListener, Observer {
             /* Overlay */
             this.spriteBatch.setProjectionMatrix(this.cam.combined);
             this.spriteBatch.begin();
-            this.font.setScale(2);
             this.font.setColor(Color.WHITE);
             this.font.draw(this.spriteBatch, "Tiles Remaining: "
                     + this.game.getWall().getNumRemainingDraws(), 0, 0);

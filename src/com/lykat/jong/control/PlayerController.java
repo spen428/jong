@@ -111,6 +111,42 @@ public class PlayerController extends AbstractPlayerController {
         case Keys.NUM_1:
             super.discard(0);
             break;
+        case Keys.NUM_2:
+            super.discard(1);
+            break;
+        case Keys.NUM_3:
+            super.discard(2);
+            break;
+        case Keys.NUM_4:
+            super.discard(3);
+            break;
+        case Keys.NUM_5:
+            super.discard(4);
+            break;
+        case Keys.NUM_6:
+            super.discard(5);
+            break;
+        case Keys.NUM_7:
+            super.discard(6);
+            break;
+        case Keys.NUM_8:
+            super.discard(7);
+            break;
+        case Keys.NUM_9:
+            super.discard(8);
+            break;
+        case Keys.NUM_0:
+            super.discard(9);
+            break;
+        case Keys.MINUS:
+            super.discard(10);
+            break;
+        case Keys.EQUALS:
+            super.discard(11);
+            break;
+        case Keys.BACKSPACE:
+            super.discard(12);
+            break;
         default:
             break;
         }

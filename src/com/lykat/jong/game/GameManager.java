@@ -1,7 +1,6 @@
 package com.lykat.jong.game;
 
 import java.util.ArrayList;
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
@@ -10,7 +9,6 @@ import java.util.logging.Logger;
 import com.lykat.jong.calc.Hand;
 import com.lykat.jong.calc.Yaku;
 import com.lykat.jong.control.AbstractPlayerController;
-import com.lykat.jong.control.TsumokiriAI;
 import com.lykat.jong.game.GameEvent.GameEventType;
 import com.lykat.jong.game.Meld.MeldSource;
 import com.lykat.jong.game.Meld.MeldType;
@@ -77,10 +75,18 @@ public class GameManager implements GameEventListener {
         return this.game;
     }
 
+    private void fireEventAllPlayers(GameEventType eventType) {
+        fireEventAllPlayers(eventType, null);
+    }
+
     private void fireEventAllPlayers(GameEventType eventType, Object eventData) {
         for (AbstractPlayerController player : this.players) {
             fireEvent(player, eventType, eventData);
         }
+    }
+
+    private void fireEvent(Player target, GameEvent event) {
+        fireEvent(getPlayerController(target), event);
     }
 
     private void fireEvent(Player target, GameEventType eventType,
@@ -90,9 +96,14 @@ public class GameManager implements GameEventListener {
 
     private static void fireEvent(AbstractPlayerController target,
             GameEventType eventType, Object eventData) {
+        GameEvent event = new GameEvent(null, eventType, eventData,
+                System.currentTimeMillis());
+        fireEvent(target, event);
+    }
+
+    private static void fireEvent(AbstractPlayerController target,
+            GameEvent event) {
         if (target != null) {
-            GameEvent event = new GameEvent(null, eventType, eventData,
-                    System.currentTimeMillis());
             target.handleEvent(event);
         }
     }
@@ -126,15 +137,15 @@ public class GameManager implements GameEventListener {
         final GameState gameState = this.game.getGameState();
 
         // Echo event back to source
-        if (player != null) {
-            getPlayerController(player).handleEvent(event);
-        }
+        // TODO: Change
+        fireEvent(player, event);
 
         if (gameState == GameState.WAITING_FOR_PLAYERS) {
             if (eventType == GameEventType.PLAYER_CONNECT) {
                 AbstractPlayerController conn = (AbstractPlayerController) event
                         .getEventData();
                 if (connect(conn)) {
+                    // TODO: Allow observers to connect
                     fireEventAllPlayers(GameEventType.PLAYER_CONNECT, conn);
                     if (numConnectedPlayers() == this.players.length) {
                         TileValue seatWind = TileValue.TON;
@@ -214,8 +225,10 @@ public class GameManager implements GameEventListener {
             if (this.players[i] == null) {
                 insertIndex = i;
             } else if (this.players[i].getName().equals(player.getName())) {
+                // TODO: Go by ID, not name
                 fireEvent(player, GameEventType.SENT_MESSAGE,
-                        "Connection refused: Player with the same name is already in this game.");
+                        "Connection refused: Player with the same name is"
+                                + " already in this game.");
                 return false;
             }
         }
@@ -242,7 +255,7 @@ public class GameManager implements GameEventListener {
         this.called.clear();
         this.canCall.clear();
         this.game.setGameState(GameState.MUST_DRAW_LIVE);
-        fireEventAllPlayers(GameEventType.ROUND_STARTED, null);
+        fireEventAllPlayers(GameEventType.ROUND_STARTED);
         fireEvent(this.game.getTurn(), GameEventType.TURN_STARTED,
                 this.game.getGameState());
     }
@@ -424,7 +437,7 @@ public class GameManager implements GameEventListener {
             if (this.game.isMaxKan()
                     && this.game.getWall().getNumRemainingDeadWallDraws() == 0) {
                 this.game.setGameState(GameState.END_OF_ROUND);
-                fireEventAllPlayers(GameEventType.ABORT_5_KAN, null);
+                fireEventAllPlayers(GameEventType.ABORT_5_KAN);
                 return;
             }
             this.toFlip++;
@@ -501,7 +514,7 @@ public class GameManager implements GameEventListener {
             } else {
                 this.game.incrementBonusCounter();
                 this.game.setGameState(GameState.END_OF_ROUND);
-                fireEventAllPlayers(GameEventType.ABORT_RON, null);
+                fireEventAllPlayers(GameEventType.ABORT_RON);
             }
         } else {
             /* Multi-ron: Dealer ron is processed last. */
@@ -553,7 +566,7 @@ public class GameManager implements GameEventListener {
                 && Hand.isKyuushuKyuuhai(player.getHand(), player.getTsumoHai())) {
             this.game.incrementBonusCounter();
             this.game.setGameState(GameState.END_OF_ROUND);
-            fireEventAllPlayers(GameEventType.ABORT_KYUUSHU_KYUUHAI, null);
+            fireEventAllPlayers(GameEventType.ABORT_KYUUSHU_KYUUHAI);
         }
     }
 
@@ -601,21 +614,21 @@ public class GameManager implements GameEventListener {
                 }
                 if (this.game.getTurnCounter() == 3) {
                     this.game.setGameState(GameState.END_OF_ROUND);
-                    fireEventAllPlayers(GameEventType.ABORT_4_WINDS, null);
+                    fireEventAllPlayers(GameEventType.ABORT_4_WINDS);
                     return;
                 }
             }
             if (this.game.getWall().getNumRemainingDraws() == 0) {
                 this.game.setGameState(GameState.END_OF_ROUND);
-                fireEventAllPlayers(GameEventType.EXHAUSTIVE_DRAW, null);
+                fireEventAllPlayers(GameEventType.EXHAUSTIVE_DRAW);
             } else if (rs.isAllRiichiAbort()
                     && this.game.getNumPlayersRiichi() == this.game
                             .getPlayers().length) {
                 this.game.setGameState(GameState.END_OF_ROUND);
-                fireEventAllPlayers(GameEventType.ABORT_ALL_RIICHI, null);
+                fireEventAllPlayers(GameEventType.ABORT_ALL_RIICHI);
             } else if (rs.isFourKanAbort() && this.game.isMaxKan()) {
                 this.game.setGameState(GameState.END_OF_ROUND);
-                fireEventAllPlayers(GameEventType.ABORT_4_KAN, null);
+                fireEventAllPlayers(GameEventType.ABORT_4_KAN);
             } else {
                 this.game.nextTurn();
                 this.game.setGameState(GameState.MUST_DRAW_LIVE);
