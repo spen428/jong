@@ -6,9 +6,10 @@ A (real) Mahjong game written in Java.
 Dependencies
 ------------
 - JDK 1.7+
-- [LibGDX 1.0.0](https://libgdx.badlogicgames.com/releases/libgdx-1.0.0.zip)
+- [LibGDX 1.6.1](https://libgdx.badlogicgames.com/releases/)
 
-The following LibGDX jars are required to build the project:
+The following LibGDX jars are required to build the project, and should be
+placed in the `lib` folder at the root of the project directory:
 
 - gdx.jar
 - gdx-natives.jar
@@ -17,5 +18,6 @@ The following LibGDX jars are required to build the project:
 
 Acknowledgements
 ----------------
+Many thanks to Martin Persson at http://www.martinpersson.org for the tile
+textures.
 
-Many thanks to Martin Persson at http://www.martinpersson.org for the tile textures.

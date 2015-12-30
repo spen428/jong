@@ -51,9 +51,11 @@ import com.badlogic.gdx.graphics.g3d.model.MeshPart;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
 import com.lykat.jong.game.Game;
 import com.lykat.jong.game.GameEvent;
+import com.lykat.jong.game.Meld;
 import com.lykat.jong.game.Player;
 import com.lykat.jong.game.Tile;
 import com.lykat.jong.game.Wall;
@@ -74,6 +76,8 @@ public class GameScene implements ApplicationListener, Observer {
     protected SpriteBatch spriteBatch;
     protected ModelBatch modelBatch;
     protected AssetManager assets;
+
+    protected GameSceneChanges changes;
 
     /* Model instances */
     protected Array<ModelInstance> instances = new Array<>();
@@ -98,6 +102,9 @@ public class GameScene implements ApplicationListener, Observer {
     protected final Vector3 UP = new Vector3(0, 0, 1);
     protected final Vector3 RIGHT = new Vector3(1, 0, 0);
     protected final Vector3 FORWARD = new Vector3(0, 1, 0);
+
+    private int flippedDora = 0;
+    private int visibleDora = 0;
 
     @Override
     public void create() {
@@ -129,12 +136,45 @@ public class GameScene implements ApplicationListener, Observer {
         this.changed = true;
     }
 
+    /**
+     * Calculate and return the centerpoint of (the bounding box of) a given
+     * ModelInstance
+     * 
+     * @param instance
+     *            the ModelInstance
+     * @return a Vector3 representing the centerpoint
+     */
+    private static Vector3 getCenterOfBoundingBox(ModelInstance instance) {
+        BoundingBox bb = new BoundingBox();
+        instance.calculateBoundingBox(bb);
+        bb = bb.mul(instance.transform);
+        Vector3 center = new Vector3();
+        bb.getCenter(center);
+        return center;
+    }
+
+    /**
+     * Rotate a ModelInstance 180 degrees about its horizontal axis.
+     * 
+     * @param instance
+     *            the instance to flip
+     */
+    private void flip(ModelInstance instance) {
+        Vector3 center = getCenterOfBoundingBox(instance);
+        rotateAbout(center, instance.transform, this.RIGHT, 180);
+    }
+
     private void rotateAboutCenter(Matrix4 matrix, float degrees) {
+        rotateAbout(this.CENTER_POS, matrix, this.UP, degrees);
+    }
+
+    private static void rotateAbout(Vector3 about, Matrix4 matrix,
+            Vector3 rotationAxis, float degrees) {
         Vector3 pos = new Vector3();
         matrix.getTranslation(pos);
-        matrix.setToTranslation(this.CENTER_POS);
-        matrix.rotate(new Vector3(0, 0, 1), degrees);
-        pos = pos.sub(this.CENTER_POS);
+        matrix.setToTranslation(about);
+        matrix.rotate(rotationAxis, degrees);
+        pos = pos.sub(about);
         matrix.translate(pos);
     }
 
@@ -172,6 +212,7 @@ public class GameScene implements ApplicationListener, Observer {
         this.playerDiscards = new ModelInstance[numPlayers][];
         this.playerHands = new ModelInstance[numPlayers][];
         this.playerMelds = new ModelInstance[numPlayers][];
+        this.changes = new GameSceneChanges();
         for (int p = 0; p < numPlayers; p++) {
             this.playerDiscards[p] = new ModelInstance[GameConstants.MAX_DISCARDS_PER_PLAYER];
             this.playerHands[p] = new ModelInstance[GameConstants.NUM_HAND_TILES];
@@ -210,11 +251,14 @@ public class GameScene implements ApplicationListener, Observer {
         Player[] players = this.game.getPlayers();
 
         /* Walls */
-        // TODO
-        float halfWidth = ((WALL_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
+        final float halfWidth = ((WALL_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
+        final int totalLiveTiles = 136 - 14 - (13 * 4) - 1; // TODO
+        final int totalTiles = players.length * WALL_WIDTH_TILES
+                * WALL_HEIGHT_TILES;
+        int counter = 0;
         for (int p = 0; p < players.length; p++) {
-            for (int z = 0; z < WALL_HEIGHT_TILES; z++) {
-                for (int x = 0; x < WALL_WIDTH_TILES; x++) {
+            for (int x = 0; x < WALL_WIDTH_TILES; x++) {
+                for (int z = 0; z < WALL_HEIGHT_TILES; z++) {
                     ModelInstance instance = new ModelInstance(MODEL_TILE);
 
                     /* Move into position */
@@ -229,10 +273,16 @@ public class GameScene implements ApplicationListener, Observer {
                     rotateAboutCenter(instance.transform, p * 90);
                     instance.transform.rotate(0, 0, 1, 90);
 
-                    this.instances.add(instance);
+                    if (counter >= totalTiles - Wall.NUM_DEADWALL_TILES) {
+                        this.deadWallTiles.add(instance);
+                    } else if (counter < totalLiveTiles) {
+                        this.liveWallTiles.add(instance);
+                    }
+                    counter++;
                 }
             }
         }
+        this.flippedDora++; // First render loop should flip dora.
 
         this.loading = false;
     }
@@ -244,7 +294,7 @@ public class GameScene implements ApplicationListener, Observer {
 
         final Player[] players = this.game.getPlayers();
 
-        /* Hands */
+        /* Player-specific stuff */
         for (int p = 0; p < players.length; p++) {
             final Player player = players[p];
             if (player == null) {
@@ -255,120 +305,145 @@ public class GameScene implements ApplicationListener, Observer {
             final int numHandTiles = player.getHand().size();
             float halfWidth = ((numHandTiles * (tileWG)) - TILE_GAP_MM) / 2;
 
-            for (int x = 0; x < this.playerHands[p].length; x++) {
-                if (x >= numHandTiles) {
-                    if (this.playerHands[p][x] != null) {
-                        this.playerHands[p][x] = null;
+            /* Hands */
+            if (this.changes.hand) {
+                // TODO: Sort hands
+                // TODO: Prevent gaps in hand
+                for (int x = 0; x < this.playerHands[p].length; x++) {
+                    if (x >= numHandTiles) {
+                        if (this.playerHands[p][x] != null) {
+                            this.playerHands[p][x] = null;
+                        }
+                        continue;
                     }
-                    continue;
+
+                    Tile tile = player.getHand().get(x);
+                    if (this.playerHands[p][x] != null
+                            && this.playerHands[p][x].userData.equals(tile
+                                    .toString())) {
+                        continue;
+                    }
+
+                    ModelInstance instance = new ModelInstance(MODEL_TILE);
+                    this.playerHands[p][x] = instance;
+                    instance.userData = tile.toString();
+                    setTileFace(instance, TextureLoader.getTileTexture(tile));
+
+                    /* Move into position */
+                    float xPos = x * (tileWG) - halfWidth;
+                    float yPos = -HAND_TILES_Y_OFFSET_MM;
+                    float zPos = 0;
+                    instance.transform.setToWorld(
+                            new Vector3(xPos, yPos, zPos), this.FORWARD,
+                            this.UP);
+
+                    /* Rotate so it ends up in front of #p, then rotate to face */
+                    rotateAboutCenter(instance.transform, p * 90);
+                    instance.transform.rotate(0, -1, 0, 90)
+                            .rotate(-1, 0, 0, 90);
                 }
-
-                Tile tile = player.getHand().get(x);
-                if (this.playerHands[p][x] != null
-                        && this.playerHands[p][x].userData.equals(tile
-                                .toString())) {
-                    continue;
-                }
-
-                ModelInstance instance = new ModelInstance(MODEL_TILE);
-
-                /* Move into position */
-                float xPos = x * (tileWG) - halfWidth;
-                float yPos = -HAND_TILES_Y_OFFSET_MM;
-                float zPos = 0;
-                instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
-                        this.FORWARD, this.UP);
-
-                /* Rotate so it ends up in front of #p, then rotate to face */
-                rotateAboutCenter(instance.transform, p * 90);
-                instance.transform.rotate(0, -1, 0, 90).rotate(-1, 0, 0, 90);
-
-                instance.userData = tile.toString();
-                setTileFace(instance, TextureLoader.getTileTexture(tile));
-
-                this.playerHands[p][x] = instance;
             }
 
             /* Tsumo-hai */
-            Tile tsumohai = player.getTsumoHai();
-            if (tsumohai != null) {
-                if (this.playerTsumohai[p] != null
-                        && this.playerTsumohai[p].userData.equals(tsumohai
-                                .toString())) {
-                    continue;
-                }
+            if (this.changes.tsumoHai) {
+                Tile tsumohai = player.getTsumoHai();
+                if (tsumohai != null) {
+                    if (this.playerTsumohai[p] != null
+                            && this.playerTsumohai[p].userData.equals(tsumohai
+                                    .toString())) {
+                        continue;
+                    }
 
-                ModelInstance instance = new ModelInstance(MODEL_TILE);
-
-                /* Move into position */
-                float xPos = (numHandTiles + 0.5f) * (tileWG) - halfWidth;
-                float yPos = -HAND_TILES_Y_OFFSET_MM;
-                float zPos = 0;
-                boolean placeOntop = numHandTiles >= MIN_TILES_TSUMOHAI_ONTOP;
-
-                if (placeOntop) { // Place ontop of hand
-                    xPos -= tileWG;
-                    zPos += tileHG;
-                }
-
-                instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
-                        this.FORWARD, this.UP);
-
-                /* Rotate into place */
-                rotateAboutCenter(instance.transform, p * 90);
-                instance.transform.rotate(0, -1, 0, 90).rotate(-1, 0, 0, 90);
-                if (placeOntop) {
-                    instance.transform.rotate(0, 0, -1, 90);
-                }
-
-                instance.userData = tsumohai.toString();
-                setTileFace(instance, TextureLoader.getTileTexture(tsumohai));
-
-                this.playerTsumohai[p] = instance;
-            }
-
-            /* Open melds */
-            for (int y = 0; y < 4; y++) {
-                for (int x = 0; x < 4; x++) {
                     ModelInstance instance = new ModelInstance(MODEL_TILE);
 
                     /* Move into position */
-                    float xPos = OPEN_MELDS_X_OFFSET_MM - (x * tileWG);
-                    float yPos = -OPEN_MELDS_Y_OFFSET_MM + (y * tileHG);
-                    float zPos = TILE_THICKNESS_MM;
+                    float xPos = (numHandTiles + 0.5f) * (tileWG) - halfWidth;
+                    float yPos = -HAND_TILES_Y_OFFSET_MM;
+                    float zPos = 0;
+                    boolean placeOntop = numHandTiles >= MIN_TILES_TSUMOHAI_ONTOP;
+
+                    if (placeOntop) { // Place ontop of hand
+                        xPos -= tileWG;
+                        zPos += tileHG;
+                    }
+
                     instance.transform.setToWorld(
-                            new Vector3(xPos, yPos, zPos), FORWARD, UP);
+                            new Vector3(xPos, yPos, zPos), this.FORWARD,
+                            this.UP);
 
                     /* Rotate into place */
                     rotateAboutCenter(instance.transform, p * 90);
-                    instance.transform.rotate(1, 0, 0, 180)
-                            .rotate(0, 0, -1, 90);
+                    instance.transform.rotate(0, -1, 0, 90)
+                            .rotate(-1, 0, 0, 90);
+                    if (placeOntop) {
+                        instance.transform.rotate(0, 0, -1, 90);
+                    }
 
-                    instances.add(instance);
-                    setTileFace(instance, TextureLoader.getTextureById(0));
+                    instance.userData = tsumohai.toString();
+                    setTileFace(instance,
+                            TextureLoader.getTileTexture(tsumohai));
+
+                    this.playerTsumohai[p] = instance;
+                } else {
+                    this.playerTsumohai[p] = null;
                 }
             }
 
-            // TODO: use final vars
-            /* Riichi Sticks */
-            if (player.isRiichi()) {
-                ModelInstance instance = new ModelInstance(MODEL_RIICHI_STICK);
+            /* Open melds */
+            if (this.changes.calls) {
+                int y = 0;
+                for (Meld meld : player.getMelds()) {
+                    // TODO: Rotate call tile
+                    Tile callTile = meld.getCallTile();
+                    Tile[] tiles = meld.getTiles();
+                    int x = 0;
+                    for (Tile tile : tiles) {
+                        ModelInstance instance = new ModelInstance(MODEL_TILE);
 
-                /* Move into position */
-                float xPos = 0;
-                float yPos = -RIICHI_STICK_Y_OFFSET_MM;
-                float zPos = RIICHI_HEIGHT_MM;
-                instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
-                        this.FORWARD, this.UP);
+                        /* Move into position */
+                        float xPos = OPEN_MELDS_X_OFFSET_MM - (x * tileWG);
+                        float yPos = -OPEN_MELDS_Y_OFFSET_MM + (y * tileHG);
+                        float zPos = TILE_THICKNESS_MM;
+                        instance.transform.setToWorld(new Vector3(xPos, yPos,
+                                zPos), this.FORWARD, this.UP);
 
-                /* Rotate into place */
-                rotateAboutCenter(instance.transform, p * 90);
+                        /* Rotate into place */
+                        rotateAboutCenter(instance.transform, p * 90);
+                        instance.transform.rotate(1, 0, 0, 180).rotate(0, 0,
+                                -1, 90);
 
-                this.instances.add(instance);
+                        this.instances.add(instance);
+                        setTileFace(instance,
+                                TextureLoader.getTileTexture(tile));
+                        x++;
+                    }
+                    y++;
+                }
+            }
+
+            if (this.changes.riichi) {
+                /* Riichi Sticks */
+                if (player.isRiichi()) {
+                    ModelInstance instance = new ModelInstance(
+                            MODEL_RIICHI_STICK);
+
+                    /* Move into position */
+                    float xPos = 0;
+                    float yPos = -RIICHI_STICK_Y_OFFSET_MM;
+                    float zPos = RIICHI_HEIGHT_MM;
+                    instance.transform.setToWorld(
+                            new Vector3(xPos, yPos, zPos), this.FORWARD,
+                            this.UP);
+
+                    /* Rotate into place */
+                    rotateAboutCenter(instance.transform, p * 90);
+
+                    this.instances.add(instance);
+                }
             }
 
             /* Discards */
-            if (player.getDiscards().size() > 0) {
+            if (this.changes.discards && player.getDiscards().size() > 0) {
                 halfWidth = ((DISCARD_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
                 for (int i = 0; i < this.playerDiscards[p].length; i++) {
                     if (i >= player.getDiscards().size()) {
@@ -418,6 +493,18 @@ public class GameScene implements ApplicationListener, Observer {
                 }
             }
         }
+
+        /* Dead wall */
+        while (this.visibleDora < this.flippedDora) {
+            ModelInstance doraHyouji = this.deadWallTiles
+                    .get(5 + 2 * (this.visibleDora));
+            setTileFace(doraHyouji, TextureLoader.getTileTexture(this.game
+                    .getWall().getDoraIndicators()[this.visibleDora]));
+            flip(doraHyouji);
+            this.visibleDora++;
+        }
+
+        this.changes.setFalse();
     }
 
     @Override
@@ -483,7 +570,6 @@ public class GameScene implements ApplicationListener, Observer {
             /* Overlay */
             this.spriteBatch.setProjectionMatrix(this.cam.combined);
             this.spriteBatch.begin();
-            this.font.setScale(2);
             this.font.setColor(Color.WHITE);
             this.font.draw(this.spriteBatch, "Tiles Remaining: "
                     + this.game.getWall().getNumRemainingDraws(), 0, 0);
@@ -541,29 +627,43 @@ public class GameScene implements ApplicationListener, Observer {
      *            the GameEvent
      */
     private void updateToRender(GameEvent event) {
-        // TODO
-        Player player = event.getSource();
+        if (event == null) {
+            return;
+        }
+
+        if (this.changes == null) {
+            // initVars() hasn't yet been called
+            return;
+        }
+
         switch (event.getEventType()) {
         case CALL_CHII:
-            break;
         case CALL_KAN:
-            break;
         case CALL_PON:
-            break;
-        case CALL_RON:
-            break;
         case DECLARE_BONUS_TILE:
-            break;
         case DECLARE_KAN:
+            this.changes.calls = true;
+            this.changes.hand = true;
+            this.changes.discards = true;
             break;
-        case DECLARE_RIICHI:
+        case DECLARED_RIICHI:
             break;
-        case DISCARD:
-            // this.toRender.add(player.getLatestDiscard());
+        case DISCARDED:
+            // TODO: Distinguish between tsumokiri and nakakiri
+            this.changes.tsumoHai = true;
+            this.changes.hand = true;
+            this.changes.discards = true;
             break;
-        case DRAW_FROM_DEAD_WALL:
+        case DREW_FROM_DEAD_WALL:
+            this.changes.tsumoHai = true;
+            this.deadWallTiles.pop();
             break;
-        case DRAW_FROM_LIVE_WALL:
+        case DREW_FROM_LIVE_WALL:
+            this.changes.tsumoHai = true;
+            this.liveWallTiles.pop();
+            break;
+        case FLIPPED_DORA_HYOUJI:
+            this.flippedDora++;
             break;
         default:
             break;

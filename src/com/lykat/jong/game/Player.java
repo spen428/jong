@@ -238,6 +238,9 @@ public class Player {
         return this.name;
     }
 
+    /**
+     * Returns the player's hand, excluding their tsumohai.
+     */
     public ArrayList<Tile> getHand() {
         return new ArrayList<>(this.hand);
     }

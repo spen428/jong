@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+
+<project name="Jong" default="all" basedir=".">
+
+	<property name="package-prefix" value="com.lykat.jong" />
+	<property name="mainclass" value="${package-prefix}.main.Main" />
+	<property name="libgdx-version" value="1.6.1" />
+
+	<path id="classpath">
+		<fileset dir="lib">
+			<filename name="gdx.jar" />
+			<filename name="gdx-backend-lwjgl.jar" />
+			<filename name="gdx-backend-lwjgl-natives.jar" />
+			<filename name="gdx-natives.jar" />
+		</fileset>
+	</path>
+
+	<target name="all" depends="clean, jar, jar-test" />
+
+	<target name="clean">
+		<delete dir="bin" />
+		<delete dir="dist" />
+	</target>
+
+	<target name="build" depends="libs">
+		<mkdir dir="bin" />
+		<javac srcdir="src" destdir="bin" classpathref="classpath" includes="**/*.java" excludes="" includeantruntime="false" />
+	</target>
+
+	<target name="libs">
+		<unjar dest="bin">
+			<fileset dir="lib" includes="**/*.jar" />
+		</unjar>
+		<delete>
+			<fileset dir="bin" includes="**/*.RSA, **/*.SF, **/*.DSA" />
+		</delete>
+	</target>
+
+	<target name="jar" depends="build">
+		<mkdir dir="dist" />
+		<jar destfile="dist/${ant.project.name}.jar" basedir="bin">
+			<manifest>
+				<attribute name="Main-Class" value="${mainclass}" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="jar-test" depends="build">
+		<mkdir dir="dist" />
+		<jar destfile="dist/${ant.project.name}-GameplayTest.jar" basedir="bin">
+			<manifest>
+				<attribute name="Main-Class" value="${package-prefix}.test.main.GameplayTest" />
+			</manifest>
+		</jar>
+		<jar destfile="dist/${ant.project.name}-GameSceneTest.jar" basedir="bin">
+			<manifest>
+				<attribute name="Main-Class" value="${package-prefix}.test.main.GameSceneTest" />
+			</manifest>
+		</jar>
+	</target>
+
+</project>

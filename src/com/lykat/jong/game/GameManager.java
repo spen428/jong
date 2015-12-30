@@ -1,6 +1,8 @@
 package com.lykat.jong.game;
 
 import java.util.ArrayList;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -8,6 +10,7 @@ import com.lykat.jong.calc.Hand;
 import com.lykat.jong.calc.Yaku;
 import com.lykat.jong.control.AbstractPlayerController;
 import com.lykat.jong.game.GameEvent.GameEventType;
+import com.lykat.jong.game.Meld.MeldSource;
 import com.lykat.jong.game.Meld.MeldType;
 
 public class GameManager implements GameEventListener {
@@ -35,6 +38,9 @@ public class GameManager implements GameEventListener {
     private final AbstractPlayerController[] players;
     private final ArrayList<Player> waitingForOk;
 
+    private final Thread myThread;
+    final BlockingQueue<GameEvent> myQueue;
+
     public GameManager(Game game) {
         super();
         this.game = game;
@@ -45,16 +51,42 @@ public class GameManager implements GameEventListener {
         this.canCall = new ArrayList<>();
         this.called = new ArrayList<>();
         this.waitingForOk = new ArrayList<>();
+
+        this.myQueue = new ArrayBlockingQueue<>(20);
+        this.myThread = new Thread(new Runnable() {
+            private final BlockingQueue<GameEvent> queue = GameManager.this.myQueue;
+
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        asyncHandleEvent(this.queue.take());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+        this.myThread.setDaemon(true);
+        this.myThread.start();
     }
 
     public Game getGame() {
         return this.game;
     }
 
+    private void fireEventAllPlayers(GameEventType eventType) {
+        fireEventAllPlayers(eventType, null);
+    }
+
     private void fireEventAllPlayers(GameEventType eventType, Object eventData) {
         for (AbstractPlayerController player : this.players) {
             fireEvent(player, eventType, eventData);
         }
+    }
+
+    private void fireEvent(Player target, GameEvent event) {
+        fireEvent(getPlayerController(target), event);
     }
 
     private void fireEvent(Player target, GameEventType eventType,
@@ -64,9 +96,14 @@ public class GameManager implements GameEventListener {
 
     private static void fireEvent(AbstractPlayerController target,
             GameEventType eventType, Object eventData) {
+        GameEvent event = new GameEvent(null, eventType, eventData,
+                System.currentTimeMillis());
+        fireEvent(target, event);
+    }
+
+    private static void fireEvent(AbstractPlayerController target,
+            GameEvent event) {
         if (target != null) {
-            GameEvent event = new GameEvent(null, eventType, eventData,
-                    System.currentTimeMillis());
             target.handleEvent(event);
         }
     }
@@ -82,17 +119,33 @@ public class GameManager implements GameEventListener {
 
     @Override
     public void handleEvent(GameEvent event) {
+        try {
+            this.myQueue.put(event);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Do NOT call this method.
+     */
+    void asyncHandleEvent(GameEvent event) {
         // TODO: Timeouts
         final GameEventType eventType = event.getEventType();
         final Player player = event.getSource();
         final boolean isTurn = (player == this.game.getTurn());
         final GameState gameState = this.game.getGameState();
 
+        // Echo event back to source
+        // TODO: Change
+        fireEvent(player, event);
+
         if (gameState == GameState.WAITING_FOR_PLAYERS) {
             if (eventType == GameEventType.PLAYER_CONNECT) {
                 AbstractPlayerController conn = (AbstractPlayerController) event
                         .getEventData();
                 if (connect(conn)) {
+                    // TODO: Allow observers to connect
                     fireEventAllPlayers(GameEventType.PLAYER_CONNECT, conn);
                     if (numConnectedPlayers() == this.players.length) {
                         TileValue seatWind = TileValue.TON;
@@ -127,15 +180,15 @@ public class GameManager implements GameEventListener {
                 player.deal(this.game.getWall().deadWallDraw());
                 this.game.setDeadDraw(true);
                 this.game.setGameState(GameState.WAITING);
-                fireEvent(this.game.getTurn(), GameEventType.TURN_STARTED,
-                        gameState);
+                fireEventAllPlayers(GameEventType.DREW_FROM_DEAD_WALL, player);
+                fireEvent(player, GameEventType.TURN_STARTED, gameState);
             }
         } else if (gameState == GameState.MUST_DRAW_LIVE) {
             if (eventType == GameEventType.DRAW_FROM_LIVE_WALL && isTurn) {
                 player.deal(this.game.getWall().draw());
                 this.game.setGameState(GameState.WAITING);
-                fireEvent(this.game.getTurn(), GameEventType.TURN_STARTED,
-                        gameState);
+                fireEventAllPlayers(GameEventType.DREW_FROM_LIVE_WALL, player);
+                fireEvent(player, GameEventType.TURN_STARTED, gameState);
             }
         } else if (gameState == GameState.WAITING) {
             if (isTurn) {
@@ -172,8 +225,10 @@ public class GameManager implements GameEventListener {
             if (this.players[i] == null) {
                 insertIndex = i;
             } else if (this.players[i].getName().equals(player.getName())) {
+                // TODO: Go by ID, not name
                 fireEvent(player, GameEventType.SENT_MESSAGE,
-                        "Connection refused: Player with the same name is already in this game.");
+                        "Connection refused: Player with the same name is"
+                                + " already in this game.");
                 return false;
             }
         }
@@ -200,7 +255,7 @@ public class GameManager implements GameEventListener {
         this.called.clear();
         this.canCall.clear();
         this.game.setGameState(GameState.MUST_DRAW_LIVE);
-        fireEventAllPlayers(GameEventType.ROUND_STARTED, null);
+        fireEventAllPlayers(GameEventType.ROUND_STARTED);
         fireEvent(this.game.getTurn(), GameEventType.TURN_STARTED,
                 this.game.getGameState());
     }
@@ -326,17 +381,55 @@ public class GameManager implements GameEventListener {
         }
     }
 
+    private MeldSource getMeldSource(Player caller, Player discarder) {
+        int callerId = -1;
+        int discarderId = -1;
+        for (int i = 0; i < this.players.length; i++) {
+            Player p = this.players[i].getPlayer();
+            if (p == caller) {
+                callerId = i;
+            }
+            if (p == discarder) {
+                discarderId = i;
+            }
+        }
+
+        /* */
+        if (callerId == -1 || discarderId == -1) {
+            return MeldSource.UNKNOWN;
+        }
+
+        // TODO: This breaks for 5-player games, but who plays 5-player jong?
+        int diff = (callerId - discarderId) % this.players.length;
+        if (diff == 0) {
+            return MeldSource.SELF;
+        } else if (diff == 1) {
+            return MeldSource.LEFT;
+        } else if (diff == 2) {
+            return MeldSource.ACROSS;
+        } else {
+            return MeldSource.RIGHT;
+        }
+    }
+
     /**
      * Applies the given call, advancing the game state.
      */
     private void doCall(Call call) {
         Player caller = call.getPlayer();
         Player discarder = this.game.getTurn();
+        Meld meld = call.getMeld();
 
+        if (meld.getMeldSource() == MeldSource.UNKNOWN) {
+            MeldSource meldSource = getMeldSource(caller, discarder);
+            meld = new Meld(meld.getTiles(), meld.getCallTile(), meldSource,
+                    meld.getType());
+        }
         discarder.removeLatestDiscard();
-        caller.addMeld(call.getMeld());
+        caller.addMeld(meld);
 
         fireEvent(discarder, GameEventType.TURN_FINISHED, null);
+        fireEventAllPlayers(call.getCallEvent(), caller);
         this.game.interruptPlayers();
         this.game.setTurn(caller);
 
@@ -344,7 +437,7 @@ public class GameManager implements GameEventListener {
             if (this.game.isMaxKan()
                     && this.game.getWall().getNumRemainingDeadWallDraws() == 0) {
                 this.game.setGameState(GameState.END_OF_ROUND);
-                fireEventAllPlayers(GameEventType.ABORT_5_KAN, null);
+                fireEventAllPlayers(GameEventType.ABORT_5_KAN);
                 return;
             }
             this.toFlip++;
@@ -421,7 +514,7 @@ public class GameManager implements GameEventListener {
             } else {
                 this.game.incrementBonusCounter();
                 this.game.setGameState(GameState.END_OF_ROUND);
-                fireEventAllPlayers(GameEventType.ABORT_RON, null);
+                fireEventAllPlayers(GameEventType.ABORT_RON);
             }
         } else {
             /* Multi-ron: Dealer ron is processed last. */
@@ -473,7 +566,7 @@ public class GameManager implements GameEventListener {
                 && Hand.isKyuushuKyuuhai(player.getHand(), player.getTsumoHai())) {
             this.game.incrementBonusCounter();
             this.game.setGameState(GameState.END_OF_ROUND);
-            fireEventAllPlayers(GameEventType.ABORT_KYUUSHU_KYUUHAI, null);
+            fireEventAllPlayers(GameEventType.ABORT_KYUUSHU_KYUUHAI);
         }
     }
 
@@ -500,9 +593,11 @@ public class GameManager implements GameEventListener {
         this.game.setDeadDraw(false);
         LOGGER.log(Level.FINER, String.format("Player %s discarded tile %s",
                 player.getName(), tile.toString()));
+        fireEventAllPlayers(GameEventType.DISCARDED, player);
 
         while (this.toFlip > 0) {
-            this.game.getWall().flipDora();
+            Tile newHyouji = this.game.getWall().flipDora();
+            fireEventAllPlayers(GameEventType.FLIPPED_DORA_HYOUJI, newHyouji);
             this.toFlip--;
         }
         this.game.setGameState(GameState.WAITING_FOR_CALLERS);
@@ -519,21 +614,21 @@ public class GameManager implements GameEventListener {
                 }
                 if (this.game.getTurnCounter() == 3) {
                     this.game.setGameState(GameState.END_OF_ROUND);
-                    fireEventAllPlayers(GameEventType.ABORT_4_WINDS, null);
+                    fireEventAllPlayers(GameEventType.ABORT_4_WINDS);
                     return;
                 }
             }
             if (this.game.getWall().getNumRemainingDraws() == 0) {
                 this.game.setGameState(GameState.END_OF_ROUND);
-                fireEventAllPlayers(GameEventType.EXHAUSTIVE_DRAW, null);
+                fireEventAllPlayers(GameEventType.EXHAUSTIVE_DRAW);
             } else if (rs.isAllRiichiAbort()
                     && this.game.getNumPlayersRiichi() == this.game
                             .getPlayers().length) {
                 this.game.setGameState(GameState.END_OF_ROUND);
-                fireEventAllPlayers(GameEventType.ABORT_ALL_RIICHI, null);
+                fireEventAllPlayers(GameEventType.ABORT_ALL_RIICHI);
             } else if (rs.isFourKanAbort() && this.game.isMaxKan()) {
                 this.game.setGameState(GameState.END_OF_ROUND);
-                fireEventAllPlayers(GameEventType.ABORT_4_KAN, null);
+                fireEventAllPlayers(GameEventType.ABORT_4_KAN);
             } else {
                 this.game.nextTurn();
                 this.game.setGameState(GameState.MUST_DRAW_LIVE);
@@ -554,7 +649,8 @@ public class GameManager implements GameEventListener {
         Player player = event.getSource();
         if (meld.getType() == MeldType.KANTSU_CLOSED) {
             player.addMeld(meld);
-            this.game.getWall().flipDora();
+            Tile newHyouji = this.game.getWall().flipDora();
+            fireEventAllPlayers(GameEventType.FLIPPED_DORA_HYOUJI, newHyouji);
             this.game.setGameState(GameState.CLOSED_KAN_DECLARED);
             fireEventAllPlayers(GameEventType.DECLARE_KAN, player);
             if (!hasCallers(event)) {
@@ -596,7 +692,6 @@ public class GameManager implements GameEventListener {
             }
 
             ArrayList<Tile> hand = player.getHand();
-            ArrayList<Meld> melds = player.getMelds();
 
             /* Chii/Pon/Kan calls */
             ArrayList<Meld> callableMelds = Hand.getCallableMelds(hand, tile);
@@ -605,6 +700,7 @@ public class GameManager implements GameEventListener {
             }
 
             /* Ron calls */
+            ArrayList<Meld> melds = player.getMelds();
             if (Hand.getWaits(hand, melds).contains(tile)) {
                 Call ronCall = new Call(player, GameEventType.CALL_RON);
                 if (this.game.getGameState() == GameState.BONUS_TILE_DECLARED
@@ -645,4 +741,5 @@ public class GameManager implements GameEventListener {
             this.canCall.add(call);
         }
     }
+
 }
