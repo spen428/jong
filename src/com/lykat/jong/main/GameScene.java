@@ -68,7 +68,7 @@ import com.lykat.jong.game.Wall;
  */
 public class GameScene implements ApplicationListener, Observer {
 
-    public static final Logger LOGGER = Logger.getLogger("Graphics");
+    public static final Logger LOGGER = Logger.getLogger("Graphics"); //$NON-NLS-1$
 
     protected Game game, setGame;
     protected Environment environment;
@@ -105,6 +105,8 @@ public class GameScene implements ApplicationListener, Observer {
 
     private int flippedDora;
     private int visibleDora;
+    private int deadWallDraws;
+    private int liveWallDraws;
 
     @Override
     public void create() {
@@ -222,6 +224,8 @@ public class GameScene implements ApplicationListener, Observer {
         this.deadWallTiles = new Array<>(true, Wall.NUM_DEADWALL_TILES);
         this.flippedDora = 0;
         this.visibleDora = 0;
+        this.liveWallDraws = 0;
+        this.deadWallDraws = 0;
     }
 
     private void loadGraphics() {
@@ -252,7 +256,6 @@ public class GameScene implements ApplicationListener, Observer {
 
         /* Walls */
         final float halfWidth = ((WALL_WIDTH_TILES * tileWG) - TILE_GAP_MM) / 2;
-        final int totalLiveTiles = 136 - 14 - (13 * 4) - 1; // TODO
         final int totalTiles = players.length * WALL_WIDTH_TILES
                 * WALL_HEIGHT_TILES;
         int counter = 0;
@@ -275,7 +278,7 @@ public class GameScene implements ApplicationListener, Observer {
 
                     if (counter >= totalTiles - Wall.NUM_DEADWALL_TILES) {
                         this.deadWallTiles.add(instance);
-                    } else if (counter < totalLiveTiles) {
+                    } else {
                         this.liveWallTiles.add(instance);
                     }
                     counter++;
@@ -494,6 +497,16 @@ public class GameScene implements ApplicationListener, Observer {
             }
         }
 
+        /* Wall draws */
+        while (this.liveWallDraws > 0) {
+            this.liveWallTiles.pop();
+            this.liveWallDraws--;
+        }
+        while (this.deadWallDraws > 0) {
+            this.deadWallTiles.pop();
+            this.deadWallDraws--;
+        }
+
         /* Dead wall */
         while (this.visibleDora < this.flippedDora) {
             ModelInstance doraHyouji = this.deadWallTiles
@@ -631,11 +644,7 @@ public class GameScene implements ApplicationListener, Observer {
             return;
         }
 
-        if (this.changes == null) {
-            // initVars() hasn't yet been called
-            return;
-        }
-
+        // TODO: Store exact changes to iterate through in the render loop.
         switch (event.getEventType()) {
         case CALL_CHII:
         case CALL_KAN:
@@ -660,11 +669,13 @@ public class GameScene implements ApplicationListener, Observer {
             break;
         case DREW_FROM_DEAD_WALL:
             this.changes.tsumoHai = true;
-            this.deadWallTiles.pop();
+            this.changes.hand = true;
+            this.deadWallDraws++;
             break;
         case DREW_FROM_LIVE_WALL:
             this.changes.tsumoHai = true;
-            this.liveWallTiles.pop();
+            this.changes.hand = true;
+            this.liveWallDraws++;
             break;
         case FLIPPED_DORA_HYOUJI:
             this.flippedDora++;
