@@ -4,62 +4,39 @@ import java.util.EventObject;
 
 public class GameEvent extends EventObject {
 
-    private static final long serialVersionUID = -5522214486399537195L;
-
     public enum GameEventType {
-        DRAW_FROM_LIVE_WALL,
-        DRAW_FROM_DEAD_WALL,
-        DISCARD,
-        DECLARE_RIICHI,
-        DECLARE_BONUS_TILE,
-        ABORT_KYUUSHU_KYUUHAI,
-        DECLARE_TSUMO,
-        DECLARE_KAN,
-        CALL_PON,
-        CALL_CHII,
-        CALL_RON,
-        CALL_KAN,
-        SKIP_CALL,
-        CALL_AVAILABLE,
-        TURN_STARTED,
-        TURN_FINISHED,
-        ABORT_ALL_RIICHI,
         ABORT_4_KAN,
-        ABORT_CHOMBO,
-        EXHAUSTIVE_DRAW,
         ABORT_4_WINDS,
         ABORT_5_KAN,
+        ABORT_ALL_RIICHI,
+        ABORT_CHOMBO,
+        ABORT_KYUUSHU_KYUUHAI,
         ABORT_RON,
+        CALL_AVAILABLE,
+        CALL_CHII,
+        CALL_KAN,
+        CALL_PON,
+        CALL_RON,
+        DECLARE_BONUS_TILE,
+        DECLARE_KAN,
+        DECLARE_RIICHI,
+        DECLARE_TSUMO,
+        DISCARD,
+        DREW_FROM_DEAD_WALL,
+        DREW_FROM_LIVE_WALL,
+        EXHAUSTIVE_DRAW,
+        FLIPPED_DORA_HYOUJI,
+        OK,
         PLAYER_CONNECT,
         ROUND_STARTED,
         SENT_MESSAGE,
-        OK,
-        /* "Past-tense" game events */
-        DREW_FROM_DEAD_WALL,
-        DREW_FROM_LIVE_WALL,
-        DISCARDED,
-        DECLARED_RIICHI,
-        CALLED_KAN,
-        CALLED_CHII,
-        CALLED_PON,
-        DECLARED_BONUS_TILE,
-        DECLARED_KAN,
-        FLIPPED_DORA_HYOUJI;
+        SKIP_CALL,
+        TSUMOKIRI,
+        TURN_FINISHED,
+        TURN_STARTED;
 
-        /**
-         * Returns true if the event requires it to be the player's turn.
-         */
-        public boolean requiresControl() {
+        public boolean isAbort() {
             switch (this) {
-            case DECLARE_BONUS_TILE:
-            case DECLARE_KAN:
-            case ABORT_KYUUSHU_KYUUHAI:
-            case DECLARE_RIICHI:
-            case DECLARE_TSUMO:
-            case DISCARD:
-            case DRAW_FROM_DEAD_WALL:
-            case DRAW_FROM_LIVE_WALL:
-                return true;
             default:
                 return false;
             }
@@ -80,16 +57,29 @@ public class GameEvent extends EventObject {
             }
         }
 
-        public boolean isAbort() {
+        /**
+         * Returns true if the event requires it to be the player's turn.
+         */
+        public boolean requiresControl() {
             switch (this) {
+            case ABORT_KYUUSHU_KYUUHAI:
+            case DECLARE_BONUS_TILE:
+            case DECLARE_KAN:
+            case DECLARE_TSUMO:
+            case DECLARE_RIICHI:
+            case DISCARD:
+            case TSUMOKIRI:
+                return true;
             default:
                 return false;
             }
         }
     }
 
-    private final GameEventType eventType;
+    private static final long serialVersionUID = -5522214486399537195L;
+
     private final Object eventData;
+    private final GameEventType eventType;
     private final long timeStamp;
 
     /**
@@ -119,9 +109,12 @@ public class GameEvent extends EventObject {
         this.timeStamp = timeStamp;
     }
 
-    @Override
-    public String toString() {
-        return super.toString();
+    public Object getEventData() {
+        return this.eventData;
+    }
+
+    public GameEventType getEventType() {
+        return this.eventType;
     }
 
     @Override
@@ -129,16 +122,13 @@ public class GameEvent extends EventObject {
         return (Player) this.source;
     }
 
-    public GameEventType getEventType() {
-        return this.eventType;
-    }
-
-    public Object getEventData() {
-        return this.eventData;
-    }
-
     public long getTimeStamp() {
         return this.timeStamp;
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
     }
 
 }

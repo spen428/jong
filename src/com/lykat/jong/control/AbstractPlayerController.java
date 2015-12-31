@@ -69,7 +69,7 @@ public abstract class AbstractPlayerController extends Observable implements
     }
 
     public final void tsumoKiri() {
-        fireEvent(GameEventType.DISCARD, -1);
+        fireEvent(GameEventType.TSUMOKIRI);
     }
 
     public final void skipCall() {

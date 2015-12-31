@@ -30,17 +30,15 @@ public class TsumokiriAI extends AbstractPlayerController {
             if (data instanceof GameState) {
                 GameState state = (GameState) data;
                 if (type == GameEventType.TURN_STARTED) {
-                    if (state == GameState.MUST_DRAW_LIVE) {
-                        super.fireEvent(GameEventType.DRAW_FROM_LIVE_WALL);
+                    if (state == GameState.WAITING) {
                         sleep();
-                    } else if (state == GameState.MUST_DRAW_DEAD) {
-                        super.fireEvent(GameEventType.DRAW_FROM_DEAD_WALL);
-                        sleep();
+                        super.tsumoKiri();
                     }
+                } else if (type == GameEventType.DREW_FROM_LIVE_WALL) {
+                    //
                 } else if (type == GameEventType.TURN_FINISHED) {
                     //
                 } else if (state == GameState.END_OF_ROUND) {
-                    System.out.println("Pressed OK");
                     super.ok();
                 } else if (state == GameState.GAME_OVER) {
                     //
@@ -50,7 +48,6 @@ public class TsumokiriAI extends AbstractPlayerController {
                 // Call call = (Call) data;
                 super.skipCall();
             }
-            super.tsumoKiri();
         }
 
         super.notifyObservers(event);

@@ -35,15 +35,15 @@ public class Wall {
             throw new IllegalArgumentException("Number of dead-wall draws "
                     + "must be between 0 and 12");
         }
-        rand = new Random();
+        this.rand = new Random();
         this.numDeadWallDraws = numDeadWallDraws;
         this.remainingDeadWallDraws = numDeadWallDraws;
         this.dora = 1;
 
         /* Construct the wall. */
-        liveWall = tileSet;
-        remainingLive = new ArrayList<Integer>();
-        deadWall = new Tile[NUM_DEADWALL_TILES];
+        this.liveWall = tileSet;
+        this.remainingLive = new ArrayList<>();
+        this.deadWall = new Tile[NUM_DEADWALL_TILES];
         this.reset();
     }
 
@@ -56,9 +56,9 @@ public class Wall {
         if (size < 1) {
             return null;
         }
-        int r = rand.nextInt(size);
-        remainingLive.remove(r);
-        return liveWall[r];
+        int r = this.rand.nextInt(size);
+        this.remainingLive.remove(r);
+        return this.liveWall[r];
     }
 
     /**
@@ -70,7 +70,7 @@ public class Wall {
         if (getNumRemainingDeadWallDraws() > 0) {
             Tile draw = this.draw();
             if (draw != null) {
-                remainingDeadWallDraws--;
+                this.remainingDeadWallDraws--;
                 return draw;
             }
         }
@@ -81,14 +81,14 @@ public class Wall {
      * Resets the wall and dead wall.
      */
     public void reset() {
-        remainingLive.clear();
-        remainingDeadWallDraws = numDeadWallDraws;
-        dora = 1;
-        for (int i = 0; i < liveWall.length; i++) {
-            remainingLive.add(i);
+        this.remainingLive.clear();
+        this.remainingDeadWallDraws = this.numDeadWallDraws;
+        this.dora = 1;
+        for (int i = 0; i < this.liveWall.length; i++) {
+            this.remainingLive.add(i);
         }
-        for (int i = 0; i < deadWall.length; i++) {
-            deadWall[i] = this.draw();
+        for (int i = 0; i < this.deadWall.length; i++) {
+            this.deadWall[i] = this.draw();
         }
     }
 
@@ -96,48 +96,47 @@ public class Wall {
      * Number of tiles left in the live wall.
      */
     public int getNumRemainingDraws() {
-        return remainingLive.size();
+        return this.remainingLive.size();
     }
 
     public int getNumRemainingDeadWallDraws() {
-        if (getNumRemainingDraws() < remainingDeadWallDraws) {
+        if (getNumRemainingDraws() < this.remainingDeadWallDraws) {
             return getNumRemainingDraws();
-        } else {
-            return remainingDeadWallDraws;
         }
+        return this.remainingDeadWallDraws;
     }
 
     public int getTotalNumDeadWallDraws() {
-        return numDeadWallDraws;
+        return this.numDeadWallDraws;
     }
 
     public int getNumDoraIndicators() {
-        return dora;
+        return this.dora;
     }
 
     public int getTotalNumTiles() {
-        return liveWall.length + deadWall.length;
+        return this.liveWall.length + this.deadWall.length;
     }
 
     public Tile flipDora() {
-        if (dora < NUM_DEADWALL_TILES / 2) {
-            dora++;
+        if (this.dora < NUM_DEADWALL_TILES / 2) {
+            this.dora++;
         }
-        return getDoraIndicators()[dora - 1];
+        return getDoraIndicators()[this.dora - 1];
     }
 
     public Tile[] getDoraIndicators() {
-        Tile[] tiles = new Tile[dora];
+        Tile[] tiles = new Tile[this.dora];
         for (int i = 0; i < tiles.length; i++) {
-            tiles[i] = deadWall[i];
+            tiles[i] = this.deadWall[i];
         }
         return tiles;
     }
 
     public Tile[] getUraDoraIndicators() {
-        Tile[] tiles = new Tile[dora];
+        Tile[] tiles = new Tile[this.dora];
         for (int i = 0; i < tiles.length; i++) {
-            tiles[i] = deadWall[i + dora];
+            tiles[i] = this.deadWall[i + this.dora];
         }
         return tiles;
     }
@@ -168,7 +167,7 @@ public class Wall {
      * removed)
      */
     public static Tile[] twoPlayerTileSet() {
-        ArrayList<Tile> tileSet = new ArrayList<Tile>();
+        ArrayList<Tile> tileSet = new ArrayList<>();
         for (Tile t : fourPlayerTileSet()) {
             if (t.getSuit() != TileSuit.WANZU && t.getSuit() != TileSuit.PINZU) {
                 tileSet.add(t);
@@ -187,7 +186,7 @@ public class Wall {
      * Returns the set of tiles used in 3 player mahjong (2~8 Wanzu removed)
      */
     public static Tile[] threePlayerTileSet() {
-        ArrayList<Tile> tileSet = new ArrayList<Tile>();
+        ArrayList<Tile> tileSet = new ArrayList<>();
         for (Tile t : fourPlayerTileSet()) {
             if (t.getSuit() != TileSuit.WANZU) {
                 tileSet.add(t);

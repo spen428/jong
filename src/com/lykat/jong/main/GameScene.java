@@ -646,12 +646,16 @@ public class GameScene implements ApplicationListener, Observer {
             this.changes.hand = true;
             this.changes.discards = true;
             break;
-        case DECLARED_RIICHI:
+        case DECLARE_RIICHI:
+            this.changes.riichi = true;
             break;
-        case DISCARDED:
-            // TODO: Distinguish between tsumokiri and nakakiri
+        case DISCARD:
             this.changes.tsumoHai = true;
             this.changes.hand = true;
+            this.changes.discards = true;
+            break;
+        case TSUMOKIRI:
+            this.changes.tsumoHai = true;
             this.changes.discards = true;
             break;
         case DREW_FROM_DEAD_WALL:
