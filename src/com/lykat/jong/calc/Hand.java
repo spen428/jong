@@ -9,47 +9,8 @@ import com.lykat.jong.game.Meld.MeldType;
 
 public class Hand {
 
-    /**
-     * Returns true if a Kokushi Musou hand can be constructed from the given
-     * set of tiles.
-     */
-    public static boolean canKokushiMusou(Tile[] tiles) {
-        /* Extract unique Yaochuuhai */
-        ArrayList<Tile> got = extractUniqueYaochuuhai(tiles);
-
-        /* Ensure that there are exactly 13 */
-        if (got.size() != 13)
-            return false;
-
-        /* Find the pair */
-        for (int i = 0; i < tiles.length; i++) {
-            if (!got.contains(tiles[i]) && tiles[i].isYaochuuhai()) {
-                // System.out.println("Kokushi Musou");
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Returns an AL of the unique Yaochuuhai (Terminals and Honours) in the
-     * given array of tiles.
-     */
-    public static ArrayList<Tile> extractUniqueYaochuuhai(Tile[] tiles) {
-        /* Keep track of orphans */
-        ArrayList<Tile> ych = new ArrayList<>();
-
-        /* Pass 1 - Find 13 unique */
-        for (int i = 0; i < tiles.length; i++) {
-            if (tiles[i].isYaochuuhai()) {
-                if (!Hand.containsTile(tiles[i], ych)) {
-                    ych.add(tiles[i]);
-                }
-            }
-        }
-
-        return ych;
+    public enum HandType {
+        CHIITOITSU, INVALID, KOKUSHI_MUSOU, REGULAR;
     }
 
     /**
@@ -71,6 +32,44 @@ public class Hand {
         if (got.size() >= 7) {
             // System.out.println("Chiitoitsu");
             return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true if any legal hand can be constructed from the given tile
+     * set.
+     */
+    public static HandType canConstructHand(Tile[] tiles) {
+        if (Hand.canKokushiMusou(tiles))
+            return HandType.KOKUSHI_MUSOU;
+        if (Hand.canChiitoitsu(tiles))
+            return HandType.CHIITOITSU;
+        if (Hand.canRegularHand(tiles))
+            return HandType.REGULAR;
+        else
+            return HandType.INVALID;
+    }
+
+    /**
+     * Returns true if a Kokushi Musou hand can be constructed from the given
+     * set of tiles.
+     */
+    public static boolean canKokushiMusou(Tile[] tiles) {
+        /* Extract unique Yaochuuhai */
+        ArrayList<Tile> got = extractUniqueYaochuuhai(tiles);
+
+        /* Ensure that there are exactly 13 */
+        if (got.size() != 13)
+            return false;
+
+        /* Find the pair */
+        for (int i = 0; i < tiles.length; i++) {
+            if (!got.contains(tiles[i]) && tiles[i].isYaochuuhai()) {
+                // System.out.println("Kokushi Musou");
+                return true;
+            }
         }
 
         return false;
@@ -165,22 +164,14 @@ public class Hand {
     }
 
     /**
-     * Returns true if any legal hand can be constructed from the given tile
-     * set.
+     * Returns true if any of the given melds share the same tile instance.
      */
-    public static HandType canConstructHand(Tile[] tiles) {
-        if (Hand.canKokushiMusou(tiles))
-            return HandType.KOKUSHI_MUSOU;
-        if (Hand.canChiitoitsu(tiles))
-            return HandType.CHIITOITSU;
-        if (Hand.canRegularHand(tiles))
-            return HandType.REGULAR;
-        else
-            return HandType.INVALID;
-    }
-
-    public enum HandType {
-        INVALID, KOKUSHI_MUSOU, CHIITOITSU, REGULAR;
+    public static boolean containsIdentical(Meld... melds) {
+        for (int i = 0; i < melds.length; i++)
+            for (int j = i; j < melds.length; j++)
+                if (i != j && containsIdentical(melds[i], melds[j]))
+                    return true;
+        return false;
     }
 
     /**
@@ -194,42 +185,56 @@ public class Hand {
         return false;
     }
 
-    /**
-     * Returns true if any of the given melds share the same tile instance.
-     */
-    public static boolean containsIdentical(Meld... melds) {
-        for (int i = 0; i < melds.length; i++)
-            for (int j = i; j < melds.length; j++)
-                if (i != j && containsIdentical(melds[i], melds[j]))
-                    return true;
-        return false;
+    public static int countFuHan(ArrayList<Yaku> yaku) {
+        // TODO Auto-generated method stub
+        return 0;
     }
 
     /**
-     * Returns an ArrayList of the given hand's possible waits. If the hand is
-     * not valid or is not tenpai, the returned ArrayList will be empty.
+     * Returns an ArrayList of all of the Toitsu (pairs) in the given array of
+     * tiles. If there are three or more of a tile, it is a Koutsu/Kantsu and so
+     * those tiles are not counted as forming a pair in this method.
      */
-    public static ArrayList<Tile> getWaits(ArrayList<Tile> hand,
-            ArrayList<Meld> melds) {
-        ArrayList<Tile> waits = new ArrayList<Tile>();
-        // TODO
-        return waits;
+    public static ArrayList<Meld> extractToitsu(ArrayList<Tile> hand) {
+        ArrayList<Meld> melds = new ArrayList<>();
+        for (int i = 0; i < hand.size(); i++) {
+            Meld meld = null;
+            Tile t1 = hand.get(i);
+            for (int j = i + 1; j < hand.size(); j++) {
+                Tile t2 = hand.get(j);
+                if (t1.equals(t2)) {
+                    if (meld == null) {
+                        meld = new Meld(new Tile[] { t1, t2 }, MeldType.TOITSU);
+                        melds.add(meld);
+                    } else {
+                        /* We already found two, this is the third */
+                        melds.remove(meld);
+                        break;
+                    }
+                }
+            }
+        }
+        return melds;
     }
 
     /**
-     * Returns an ArrayList of the given hand's yaku. If the hand is not valid
-     * or has no yaku, the returned ArrayList will be empty.
-     *
-     * @param hand
-     * @param melds
-     * @param tsumohai
-     * @return
+     * Returns an AL of the unique Yaochuuhai (Terminals and Honours) in the
+     * given array of tiles.
      */
-    public static ArrayList<Yaku> getYaku(ArrayList<Tile> hand,
-            ArrayList<Meld> melds, Tile tsumohai) {
-        ArrayList<Yaku> yaku = new ArrayList<Yaku>();
-        // TODO
-        return yaku;
+    public static ArrayList<Tile> extractUniqueYaochuuhai(Tile[] tiles) {
+        /* Keep track of orphans */
+        ArrayList<Tile> ych = new ArrayList<>();
+
+        /* Pass 1 - Find 13 unique */
+        for (int i = 0; i < tiles.length; i++) {
+            if (tiles[i].isYaochuuhai()) {
+                if (!Hand.containsTile(tiles[i], ych)) {
+                    ych.add(tiles[i]);
+                }
+            }
+        }
+
+        return ych;
     }
 
     /**
@@ -264,31 +269,40 @@ public class Hand {
         return melds;
     }
 
+    public static ArrayList<Tile> getWaits(ArrayList<Tile> hand) {
+        return getWaits(hand, null, null);
+    }
+
+    public static ArrayList<Tile> getWaits(ArrayList<Tile> hand,
+            ArrayList<Meld> melds) {
+        return getWaits(hand, melds, null);
+    }
+
     /**
-     * Returns an ArrayList of all of the Toitsu (pairs) in the given array of
-     * tiles. If there are three or more of a tile, it is a Koutsu/Kantsu and so
-     * those tiles are not counted as forming a pair in this method.
+     * Returns an array of the given hand's possible waits. If the hand is not
+     * valid or is not tenpai, the returned array will be empty.
      */
-    public static ArrayList<Meld> extractToitsu(ArrayList<Tile> hand) {
-        ArrayList<Meld> melds = new ArrayList<>();
-        for (int i = 0; i < hand.size(); i++) {
-            Meld meld = null;
-            Tile t1 = hand.get(i);
-            for (int j = i + 1; j < hand.size(); j++) {
-                Tile t2 = hand.get(j);
-                if (t1.equals(t2)) {
-                    if (meld == null) {
-                        meld = new Meld(new Tile[] { t1, t2 }, MeldType.TOITSU);
-                        melds.add(meld);
-                    } else {
-                        /* We already found two, this is the third */
-                        melds.remove(meld);
-                        break;
-                    }
-                }
-            }
-        }
-        return melds;
+    public static ArrayList<Tile> getWaits(ArrayList<Tile> hand,
+            ArrayList<Meld> melds, Tile tsumoHai) {
+        ArrayList<Tile> waits = new ArrayList<Tile>();
+        // TODO
+        return waits;
+    }
+
+    /**
+     * Returns an ArrayList of the given hand's yaku. If the hand is not valid
+     * or has no yaku, the returned ArrayList will be empty.
+     *
+     * @param hand
+     * @param melds
+     * @param tsumohai
+     * @return
+     */
+    public static ArrayList<Yaku> getYaku(ArrayList<Tile> hand,
+            ArrayList<Meld> melds, Tile tsumohai) {
+        ArrayList<Yaku> yaku = new ArrayList<Yaku>();
+        // TODO
+        return yaku;
     }
 
     public static boolean isKyuushuKyuuhai(ArrayList<Tile> hand, Tile tsumoHai) {
@@ -305,11 +319,6 @@ public class Hand {
 
         /* Ensure that there are >= 9 Yaochuuhai */
         return (extractUniqueYaochuuhai(tiles).size() >= 9);
-    }
-
-    public static int countFuHan(ArrayList<Yaku> yaku) {
-        // TODO Auto-generated method stub
-        return 0;
     }
 
 }
