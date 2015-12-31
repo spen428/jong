@@ -39,8 +39,9 @@ public class GameplayTest extends GameScene {
 
         for (int i = this.player ? 1 : 0; i < 4; i++) {
             TsumokiriAI ai = new TsumokiriAI("AI " + i, this.gameManager);
-            if (i == 0)
+            if (i == 0) {
                 ai.addObserver(this);
+            }
             ai.connect();
         }
 
@@ -86,7 +87,7 @@ public class GameplayTest extends GameScene {
         handler.setFormatter(new SimpleFormatter());
         handler.setLevel(Level.ALL);
         logger.addHandler(handler);
-        logger.setLevel(Level.ALL);
+        logger.setLevel(Level.OFF);
         logger.log(Level.INFO, "GameManager logger initialised.");
 
         logger = GameScene.LOGGER;

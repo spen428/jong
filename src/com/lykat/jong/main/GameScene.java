@@ -23,6 +23,8 @@ import static com.lykat.jong.main.GraphicsConstants.TILE_THICKNESS_MM;
 import static com.lykat.jong.main.GraphicsConstants.TILE_WIDTH_MM;
 import static com.lykat.jong.main.GraphicsConstants.WALL_TILES_Y_OFFSET_MM;
 
+import java.awt.Point;
+import java.awt.event.MouseEvent;
 import java.util.Iterator;
 import java.util.Observable;
 import java.util.Observer;
@@ -47,12 +49,16 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
+import com.badlogic.gdx.graphics.g3d.model.Animation;
 import com.badlogic.gdx.graphics.g3d.model.MeshPart;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
+import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
+import com.lykat.jong.control.PlayerController;
 import com.lykat.jong.game.Game;
 import com.lykat.jong.game.GameEvent;
 import com.lykat.jong.game.Meld;
@@ -70,43 +76,113 @@ public class GameScene implements ApplicationListener, Observer {
 
     public static final Logger LOGGER = Logger.getLogger("Graphics"); //$NON-NLS-1$
 
-    protected Game game, setGame;
-    protected Environment environment;
-    protected PerspectiveCamera cam;
-    protected SpriteBatch spriteBatch;
-    protected ModelBatch modelBatch;
+    /**
+     * Calculate and return the centerpoint of (the bounding box of) a given
+     * ModelInstance
+     * 
+     * @param instance
+     *            the ModelInstance
+     * @return a Vector3 representing the centerpoint
+     */
+    private static Vector3 getCenterOfBoundingBox(ModelInstance instance) {
+        Vector3 center = new Vector3();
+        boundingBox(instance).getCenter(center);
+        return center;
+    }
+
+    private static BoundingBox boundingBox(ModelInstance instance) {
+        // TODO: Extend ModelInstance and store bounding box?
+        BoundingBox bb = new BoundingBox();
+        instance.calculateBoundingBox(bb);
+        return bb.mul(instance.transform);
+    }
+
+    private static float getRadius(ModelInstance instance) {
+        BoundingBox bb = new BoundingBox();
+        instance.calculateBoundingBox(bb);
+        bb = bb.mul(instance.transform);
+        Vector3 dimens = new Vector3();
+        bb.getDimensions(dimens);
+        return dimens.len() / 2f;
+    }
+
+    private static void rotateAbout(Vector3 about, Matrix4 matrix,
+            Vector3 rotationAxis, float degrees) {
+        Vector3 pos = new Vector3();
+        matrix.getTranslation(pos);
+        matrix.setToTranslation(about);
+        matrix.rotate(rotationAxis, degrees);
+        pos = pos.sub(about);
+        matrix.translate(pos);
+    }
+
+    private static boolean setTileFace(ModelInstance tileInstance,
+            Texture faceTexture) {
+        TextureAttribute textureAttr = new TextureAttribute(
+                TextureAttribute.Diffuse, faceTexture);
+        /* Find the index of the "face" mesh part. */
+        Iterator<MeshPart> it = tileInstance.model.meshParts.iterator();
+        int idx = 0;
+        boolean found = false;
+        while (it.hasNext()) {
+            if (it.next().id.equals("face")) {
+                found = true;
+                break;
+            }
+            idx++;
+        }
+        if (found) {
+            tileInstance.materials.get(idx).set(textureAttr);
+            return true;
+        }
+        return false;
+    }
+
     protected AssetManager assets;
+    protected PerspectiveCamera cam;
+
+    protected final Vector3 CENTER_POS = new Vector3(0, 0, 0);
 
     protected GameSceneChanges changes;
+    private int deadWallDraws;
+    protected Environment environment;
+    private int flippedDora;
+
+    protected BitmapFont font;
+
+    protected final Vector3 FORWARD = new Vector3(0, 1, 0);
+
+    protected Game game, setGame;
 
     /* Model instances */
     protected Array<ModelInstance> instances = new Array<>();
+
+    private int liveWallDraws;
     protected Array<ModelInstance> liveWallTiles, deadWallTiles;
-    protected ModelInstance[] playerTsumohai;
+    private boolean loading, changed;
+    protected ModelBatch modelBatch;
+    protected final String[] MODELS = new String[] {};
+
+    protected final Vector3 PLAYER_CAM_POS = new Vector3(0,
+            PLAYER_CAMERA_Y_OFFSET_MM, PLAYER_CAMERA_Z_OFFSET_MM);
     protected ModelInstance[][] playerDiscards, playerHands, playerMelds;
+    protected ModelInstance[] playerTsumohai;
+    protected final Vector3 RIGHT = new Vector3(1, 0, 0);
+
+    protected SpriteBatch spriteBatch;
+
+    protected ModelInstance selected;
 
     /**
      * List of ModelInstances that have not yet been rendered.
      */
     protected Array<ModelInstance> toRender = new Array<>();
 
-    private boolean loading, changed;
-
-    protected BitmapFont font;
-
-    protected final String[] MODELS = new String[] {};
-
-    protected final Vector3 PLAYER_CAM_POS = new Vector3(0,
-            PLAYER_CAMERA_Y_OFFSET_MM, PLAYER_CAMERA_Z_OFFSET_MM);
-    protected final Vector3 CENTER_POS = new Vector3(0, 0, 0);
     protected final Vector3 UP = new Vector3(0, 0, 1);
-    protected final Vector3 RIGHT = new Vector3(1, 0, 0);
-    protected final Vector3 FORWARD = new Vector3(0, 1, 0);
 
-    private int flippedDora;
     private int visibleDora;
-    private int deadWallDraws;
-    private int liveWallDraws;
+    private final Material selectedMaterial = new Material(
+            ColorAttribute.createDiffuse(new Color(255, 255, 255, 100)));
 
     @Override
     public void create() {
@@ -136,21 +212,11 @@ public class GameScene implements ApplicationListener, Observer {
         }
     }
 
-    /**
-     * Calculate and return the centerpoint of (the bounding box of) a given
-     * ModelInstance
-     * 
-     * @param instance
-     *            the ModelInstance
-     * @return a Vector3 representing the centerpoint
-     */
-    private static Vector3 getCenterOfBoundingBox(ModelInstance instance) {
-        BoundingBox bb = new BoundingBox();
-        instance.calculateBoundingBox(bb);
-        bb = bb.mul(instance.transform);
-        Vector3 center = new Vector3();
-        bb.getCenter(center);
-        return center;
+    @Override
+    public void dispose() {
+        this.modelBatch.dispose();
+        this.instances.clear();
+        this.assets.dispose();
     }
 
     /**
@@ -164,45 +230,57 @@ public class GameScene implements ApplicationListener, Observer {
         rotateAbout(center, instance.transform, this.RIGHT, 180);
     }
 
-    private void rotateAboutCenter(Matrix4 matrix, float degrees) {
-        rotateAbout(this.CENTER_POS, matrix, this.UP, degrees);
-    }
+    private ModelInstance getTile(int screenX, int screenY) {
+        if (this.playerHands == null || this.playerTsumohai == null) {
+            return null;
+        }
 
-    private static void rotateAbout(Vector3 about, Matrix4 matrix,
-            Vector3 rotationAxis, float degrees) {
-        Vector3 pos = new Vector3();
-        matrix.getTranslation(pos);
-        matrix.setToTranslation(about);
-        matrix.rotate(rotationAxis, degrees);
-        pos = pos.sub(about);
-        matrix.translate(pos);
-    }
+        Ray ray = this.cam.getPickRay(screenX, screenY);
+        float distance = -1;
+        for (int p = 0; p < this.playerHands.length; p++) {
+            for (int i = 0; i < this.playerHands[p].length; i++) {
+                final ModelInstance instance = this.playerHands[p][i];
+                if (instance == null) {
+                    continue;
+                }
 
-    protected void rotatePlayerCamera(float degrees) {
-        this.cam.rotateAround(this.CENTER_POS, this.UP, degrees);
-        this.cam.lookAt(0, 0, 0);
-    }
-
-    private static boolean setTileFace(ModelInstance tileInstance,
-            Texture faceTexture) {
-        TextureAttribute textureAttr = new TextureAttribute(
-                TextureAttribute.Diffuse, faceTexture);
-        /* Find the index of the "face" mesh part. */
-        Iterator<MeshPart> it = tileInstance.model.meshParts.iterator();
-        int idx = 0;
-        boolean found = false;
-        while (it.hasNext()) {
-            if (it.next().id.equals("face")) {
-                found = true;
-                break;
+                Vector3 position = new Vector3();
+                instance.transform.getTranslation(position);
+                position.add(getCenterOfBoundingBox(instance));
+                float dist2 = ray.origin.dst2(position);
+                if (distance >= 0f && dist2 > distance)
+                    continue;
+                if (Intersector.intersectRayBounds(ray, boundingBox(instance),
+                        position)) {
+                    distance = dist2;
+                    return instance;
+                }
             }
-            idx++;
         }
-        if (found) {
-            tileInstance.materials.get(idx).set(textureAttr);
-            return true;
+
+        for (int p = 0; p < this.playerTsumohai.length; p++) {
+            final ModelInstance instance = this.playerTsumohai[p];
+            if (instance == null) {
+                continue;
+            }
+
+            Vector3 position = new Vector3();
+            instance.transform.getTranslation(position);
+            position.add(getCenterOfBoundingBox(instance));
+            float dist2 = ray.origin.dst2(position);
+            if (distance >= 0f && dist2 > distance)
+                continue;
+            if (Intersector.intersectRayBounds(ray, boundingBox(instance),
+                    position)) {
+                distance = dist2;
+                return instance;
+            }
         }
-        return false;
+        return null;
+    }
+
+    private ModelInstance getTile(Point point) {
+        return getTile((int) point.getX(), (int) point.getY());
     }
 
     private void initVars() {
@@ -521,6 +599,11 @@ public class GameScene implements ApplicationListener, Observer {
     }
 
     @Override
+    public void pause() {
+        // TODO: Unimplemented
+    }
+
+    @Override
     public void render() {
         if (this.setGame != null) {
             this.game = this.setGame;
@@ -592,18 +675,6 @@ public class GameScene implements ApplicationListener, Observer {
     }
 
     @Override
-    public void dispose() {
-        this.modelBatch.dispose();
-        this.instances.clear();
-        this.assets.dispose();
-    }
-
-    @Override
-    public void pause() {
-        // TODO: Unimplemented
-    }
-
-    @Override
     public void resize(int arg0, int arg1) {
         // TODO: Unimplemented
     }
@@ -611,6 +682,15 @@ public class GameScene implements ApplicationListener, Observer {
     @Override
     public void resume() {
         // TODO: Unimplemented
+    }
+
+    private void rotateAboutCenter(Matrix4 matrix, float degrees) {
+        rotateAbout(this.CENTER_POS, matrix, this.UP, degrees);
+    }
+
+    protected void rotatePlayerCamera(float degrees) {
+        this.cam.rotateAround(this.CENTER_POS, this.UP, degrees);
+        this.cam.lookAt(0, 0, 0);
     }
 
     /**
@@ -627,8 +707,53 @@ public class GameScene implements ApplicationListener, Observer {
             updateToRender((GameEvent) obj);
             LOGGER.log(Level.FINER, "Graphical update called");
             this.changed = true;
+        } else if (obj instanceof MouseEvent && o instanceof PlayerController) {
+            MouseEvent evt = (MouseEvent) obj;
+            PlayerController player = (PlayerController) o;
+            ModelInstance tileInstance = getTile(evt.getPoint());
+            int button = evt.getButton();
+            if (button == MouseEvent.NOBUTTON) {
+                setSelected(tileInstance);
+            } else if (tileInstance != null) {
+                int tileIdx = getTileIndex(tileInstance);
+                if (tileIdx != -2) {
+                    if (button == MouseEvent.BUTTON1) {
+                        player.discard(tileIdx);
+                    } else if (button == MouseEvent.BUTTON3) {
+                        //
+                    }
+                }
+            }
         } else {
             LOGGER.log(Level.WARNING, "Unhandled Observable object");
+        }
+    }
+
+    private int getTileIndex(ModelInstance tileInstance) {
+        for (int p = 0; p < this.playerHands.length; p++) {
+            for (int i = 0; i < this.playerHands[p].length; i++) {
+                if (this.playerHands[p][i] == tileInstance) {
+                    System.out.println("p = " + p);
+                    return i;
+                }
+            }
+        }
+        for (int p = 0; p < this.playerTsumohai.length; p++) {
+            if (this.playerTsumohai[p] == tileInstance) {
+                System.out.println("p = " + p);
+                return -1;
+            }
+        }
+        return -2;
+    }
+
+    private void setSelected(ModelInstance instance) {
+        if (this.selected != null) {
+            this.selected.transform.translate(-2, 0, 0);
+        }
+        this.selected = instance;
+        if (instance != null) {
+            this.selected.transform.translate(2, 0, 0);
         }
     }
 

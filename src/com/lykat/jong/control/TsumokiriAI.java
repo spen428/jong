@@ -44,9 +44,14 @@ public class TsumokiriAI extends AbstractPlayerController {
                     //
                 }
             } else if (data instanceof Call) {
-                /* Available meld call */
                 // Call call = (Call) data;
                 super.skipCall();
+            } else {
+                if (type == GameEventType.ROUND_STARTED) {
+                    super.ok();
+                } else {
+                    //
+                }
             }
         }
 

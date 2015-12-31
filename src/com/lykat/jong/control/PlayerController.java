@@ -1,5 +1,8 @@
 package com.lykat.jong.control;
 
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.event.MouseEvent;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,6 +17,8 @@ import com.lykat.jong.game.Player;
 public class PlayerController extends AbstractPlayerController {
 
     public static final Logger LOGGER = Logger.getLogger("PlayerController");
+    private static final Component COMPONENT = new Component() {
+    };
 
     public PlayerController(String name, GameManager gameManager) {
         super(name, gameManager);
@@ -146,6 +151,11 @@ public class PlayerController extends AbstractPlayerController {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+        super.setChanged();
+        MouseEvent evt = new MouseEvent(COMPONENT, 0,
+                System.currentTimeMillis(), 0, screenX, screenY, 1, false,
+                button + 1); // LibGDX button values are not same as MouseEvent
+        super.notifyObservers(evt);
         return false;
     }
 
@@ -161,6 +171,11 @@ public class PlayerController extends AbstractPlayerController {
 
     @Override
     public boolean mouseMoved(int screenX, int screenY) {
+        super.setChanged();
+        MouseEvent evt = new MouseEvent(COMPONENT, 0,
+                System.currentTimeMillis(), 0, screenX, screenY, 0, false,
+                MouseEvent.NOBUTTON);
+        super.notifyObservers(evt);
         return false;
     }
 
