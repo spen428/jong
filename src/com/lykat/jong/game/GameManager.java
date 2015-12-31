@@ -189,6 +189,7 @@ public class GameManager implements GameEventListener {
                 this.waitingForOk.remove(player);
                 if (this.waitingForOk.size() == 0) {
                     setUpNewRound();
+                    this.game.setGameState(GameState.WAITING_FOR_PLAYERS);
                 }
             }
         } else {
