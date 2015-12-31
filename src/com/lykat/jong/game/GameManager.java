@@ -44,6 +44,8 @@ public class GameManager implements GameEventListener {
         if (target != null) {
             target.handleEvent(event);
         }
+        LOGGER.finest(String.format("Fired event to %s:%n%s%n",
+                target == null ? "null" : target.getName(), event.toString()));
     }
 
     private static void fireEvent(AbstractPlayerController target,
@@ -112,8 +114,14 @@ public class GameManager implements GameEventListener {
         // TODO: Timeouts
         final GameEventType eventType = event.getEventType();
         final Player player = event.getSource();
-        final boolean isTurn = (player == this.game.getTurn());
+        final Player turn = this.game.getTurn();
+        final boolean isTurn = (player == turn);
         final GameState gameState = this.game.getGameState();
+
+        LOGGER.finest(String.format("Handling GameEvent: %s%n"
+                + "  Current GameState: %s%n" + "  Current Turn: %s%n",
+                event == null ? "null" : event.toString(),
+                gameState.toString(), turn == null ? "null" : turn.getName()));
 
         /* Echo event back to source */
         fireEvent(player, event); // TODO: Change
