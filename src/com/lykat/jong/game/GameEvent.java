@@ -81,6 +81,7 @@ public class GameEvent extends EventObject {
     private final Object eventData;
     private final GameEventType eventType;
     private final long timeStamp;
+    private final String toString;
 
     /**
      * A game event.
@@ -107,6 +108,11 @@ public class GameEvent extends EventObject {
         this.eventType = eventType;
         this.eventData = eventData;
         this.timeStamp = timeStamp;
+        this.toString = String.format("GameEvent {%n  Type: %s%n  Source: %s%n"
+                + "  Event Data: %s%n  Timestamp: %d%n}",
+                eventType == null ? "null" : eventType.toString(),
+                source == null ? "null" : source.getName(),
+                eventData == null ? "null" : eventData.toString(), timeStamp);
     }
 
     public Object getEventData() {
@@ -128,7 +134,7 @@ public class GameEvent extends EventObject {
 
     @Override
     public String toString() {
-        return super.toString();
+        return this.toString;
     }
 
 }
