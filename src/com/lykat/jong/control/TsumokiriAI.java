@@ -39,6 +39,11 @@ public class TsumokiriAI extends AbstractPlayerController {
                     }
                 } else if (type == GameEventType.TURN_FINISHED) {
                     //
+                } else if (state == GameState.END_OF_ROUND) {
+                    System.out.println("Pressed OK");
+                    super.ok();
+                } else if (state == GameState.GAME_OVER) {
+                    //
                 }
             } else if (data instanceof Call) {
                 /* Available meld call */

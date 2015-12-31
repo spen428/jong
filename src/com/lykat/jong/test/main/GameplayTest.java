@@ -23,6 +23,7 @@ import com.lykat.jong.main.GameScene;
  */
 public class GameplayTest extends GameScene {
 
+    private final boolean player = true;
     private final GameManager gameManager;
     private final PlayerController playerController;
 
@@ -31,11 +32,15 @@ public class GameplayTest extends GameScene {
         this.game = new Game("GameplayTest Game", ruleSet);
         this.gameManager = new GameManager(this.game);
         this.playerController = new PlayerController("Dave", this.gameManager);
-        this.playerController.addObserver(this);
-        this.playerController.connect();
+        if (this.player) {
+            this.playerController.addObserver(this);
+            this.playerController.connect();
+        }
 
-        for (int i = 1; i < 4; i++) {
+        for (int i = this.player ? 1 : 0; i < 4; i++) {
             TsumokiriAI ai = new TsumokiriAI("AI " + i, this.gameManager);
+            if (i == 0)
+                ai.addObserver(this);
             ai.connect();
         }
 
@@ -81,7 +86,7 @@ public class GameplayTest extends GameScene {
         handler.setFormatter(new SimpleFormatter());
         handler.setLevel(Level.ALL);
         logger.addHandler(handler);
-        logger.setLevel(Level.OFF);
+        logger.setLevel(Level.ALL);
         logger.log(Level.INFO, "GameManager logger initialised.");
 
         logger = GameScene.LOGGER;

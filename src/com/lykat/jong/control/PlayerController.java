@@ -42,6 +42,10 @@ public class PlayerController extends AbstractPlayerController {
                     } else if (state == GameState.WAITING) {
                         LOGGER.log(Level.INFO, "It is now your turn.");
                     }
+                } else if (state == GameState.END_OF_ROUND) {
+                    LOGGER.log(Level.INFO, "End of round. Press OK.");
+                } else if (state == GameState.GAME_OVER) {
+                    LOGGER.log(Level.INFO, "Game over.");
                 }
             } else if (data instanceof Player) {
                 /* Notification of player action */
@@ -59,6 +63,9 @@ public class PlayerController extends AbstractPlayerController {
             } else {
                 LOGGER.log(Level.FINER,
                         "Received GameEvent: " + type.toString());
+                if (data != null) {
+                    LOGGER.log(Level.FINER, "Data: " + data.toString());
+                }
             }
         }
 

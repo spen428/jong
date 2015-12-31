@@ -103,8 +103,8 @@ public class GameScene implements ApplicationListener, Observer {
     protected final Vector3 RIGHT = new Vector3(1, 0, 0);
     protected final Vector3 FORWARD = new Vector3(0, 1, 0);
 
-    private int flippedDora = 0;
-    private int visibleDora = 0;
+    private int flippedDora;
+    private int visibleDora;
 
     @Override
     public void create() {
@@ -132,8 +132,6 @@ public class GameScene implements ApplicationListener, Observer {
         for (String path : this.MODELS) {
             this.assets.load(path, Model.class);
         }
-        this.loading = true;
-        this.changed = true;
     }
 
     /**
@@ -222,6 +220,8 @@ public class GameScene implements ApplicationListener, Observer {
         int numLiveWallTiles = this.game.getWall().getNumRemainingDraws();
         this.liveWallTiles = new Array<>(true, numLiveWallTiles);
         this.deadWallTiles = new Array<>(true, Wall.NUM_DEADWALL_TILES);
+        this.flippedDora = 0;
+        this.visibleDora = 0;
     }
 
     private void loadGraphics() {
@@ -664,6 +664,10 @@ public class GameScene implements ApplicationListener, Observer {
             break;
         case FLIPPED_DORA_HYOUJI:
             this.flippedDora++;
+            break;
+        case ROUND_STARTED:
+            this.loading = true;
+            this.changed = true;
             break;
         default:
             break;

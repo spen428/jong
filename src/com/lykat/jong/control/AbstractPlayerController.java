@@ -76,4 +76,8 @@ public abstract class AbstractPlayerController extends Observable implements
         fireEvent(GameEventType.SKIP_CALL);
     }
 
+    public final void ok() {
+        fireEvent(GameEventType.OK);
+    }
+
 }
