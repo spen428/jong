@@ -103,7 +103,8 @@ public class GameEvent extends EventObject {
      */
     public GameEvent(Player source, GameEventType eventType, Object eventData,
             long timeStamp) {
-        super(source == null ? -1 : source); // TODO: NullPlayer subclass?
+        super(source == null ? new Integer(-1) : source);
+        // TODO: NullPlayer subclass instead of -1 ?
         this.source = source;
         this.eventType = eventType;
         this.eventData = eventData;
