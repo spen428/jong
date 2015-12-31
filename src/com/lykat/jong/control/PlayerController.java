@@ -34,16 +34,16 @@ public class PlayerController extends AbstractPlayerController {
                 GameState state = (GameState) data;
                 if (type == GameEventType.TURN_STARTED) {
                     if (state == GameState.MUST_DISCARD) {
-                        LOGGER.log(Level.INFO, "You must now discard a tile.");
+                        LOGGER.info("You must now discard a tile.");
                     } else if (state == GameState.WAITING) {
-                        LOGGER.log(Level.INFO, "It is now your turn.");
+                        LOGGER.info("It is now your turn.");
                     }
                 } else if (type == GameEventType.TURN_FINISHED) {
-                    LOGGER.log(Level.INFO, "You turn is over.");
+                    LOGGER.info("You turn is over.");
                 } else if (state == GameState.END_OF_ROUND) {
-                    LOGGER.log(Level.INFO, "End of round. Press OK.");
+                    LOGGER.info("End of round. Press OK.");
                 } else if (state == GameState.GAME_OVER) {
-                    LOGGER.log(Level.INFO, "Game over.");
+                    LOGGER.info("Game over.");
                 }
             } else if (data instanceof Player) {
                 /* Notification of player action */
@@ -57,11 +57,15 @@ public class PlayerController extends AbstractPlayerController {
                 /* Available meld call */
                 Call call = (Call) data;
                 LOGGER.info("Call available: " + call.toString());
+                super.skipCall();
             } else {
-                LOGGER.log(Level.FINER,
-                        "Received GameEvent: " + type.toString());
-                if (data != null) {
-                    LOGGER.log(Level.FINER, "Data: " + data.toString());
+                if (type == GameEventType.ROUND_STARTED) {
+                    LOGGER.info("Round started: Press OK");
+                } else {
+                    LOGGER.finer("Received GameEvent: " + type.toString());
+                    if (data != null) {
+                        LOGGER.finer("Data: " + data.toString());
+                    }
                 }
             }
         }

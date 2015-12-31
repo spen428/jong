@@ -145,7 +145,16 @@ public class GameManager implements GameEventListener {
             }
         }
 
-        if (gameState == GameState.CLOSED_KAN_DECLARED
+        if (gameState == GameState.WAITING_FOR_PLAYERS) {
+            /* Waiting for OK to deal haipai */
+            if (eventType == GameEventType.OK) {
+                LOGGER.fine("Player " + player.getName() + " pressed OK.");
+                this.waitingForOk.remove(player);
+                if (this.waitingForOk.size() == 0) {
+                    dealHaipai();
+                }
+            }
+        } else if (gameState == GameState.CLOSED_KAN_DECLARED
                 || gameState == GameState.EXTENDED_KAN_DECLARED
                 || gameState == GameState.BONUS_TILE_DECLARED
                 || gameState == GameState.WAITING_FOR_CALLERS) {
@@ -155,13 +164,12 @@ public class GameManager implements GameEventListener {
                 removeCaller(player);
             }
         } else if (gameState == GameState.MUST_DISCARD) {
-            if (eventType == GameEventType.DISCARD && isTurn) {
+            if (isTurn && eventType.isDiscard()) {
                 discard(event);
             }
         } else if (gameState == GameState.WAITING) {
             if (isTurn) {
-                if (eventType == GameEventType.DISCARD
-                        || eventType == GameEventType.TSUMOKIRI) {
+                if (eventType.isDiscard()) {
                     discard(event);
                 } else if (eventType == GameEventType.DECLARE_RIICHI) {
                     declareRiichi(event);
@@ -177,8 +185,7 @@ public class GameManager implements GameEventListener {
             }
         } else if (gameState == GameState.END_OF_ROUND) {
             if (eventType == GameEventType.OK) {
-                LOGGER.log(Level.INFO, "Player " + player.getName()
-                        + " pressed OK.");
+                LOGGER.fine("Player " + player.getName() + " pressed OK.");
                 this.waitingForOk.remove(player);
                 if (this.waitingForOk.size() == 0) {
                     setUpNewRound();
@@ -363,9 +370,10 @@ public class GameManager implements GameEventListener {
      */
     private void discard(GameEvent event) {
         Player player = event.getSource();
+        boolean isTsumokiri = event.getEventType() == GameEventType.TSUMOKIRI;
         try {
             Tile tile;
-            if (event.getEventType() == GameEventType.TSUMOKIRI) {
+            if (isTsumokiri) {
                 tile = player.tsumoKiri();
             } else {
                 int index = ((Integer) event.getEventData()).intValue();
@@ -374,7 +382,8 @@ public class GameManager implements GameEventListener {
             this.game.setDeadDraw(false);
             LOGGER.log(Level.FINER, String.format("Player %s"
                     + " discarded tile %s", player.getName(), tile.toString()));
-            fireEventAllPlayers(GameEventType.DISCARD, player);
+            fireEventAllPlayers(isTsumokiri ? GameEventType.TSUMOKIRI
+                    : GameEventType.DISCARD, player);
         } catch (IllegalStateException ex) {
             LOGGER.log(Level.WARNING, ex.getMessage());
             return;
@@ -487,7 +496,7 @@ public class GameManager implements GameEventListener {
         player.deal(tile);
         this.game.setDeadDraw(true);
         this.game.setGameState(GameState.WAITING);
-        fireEventAllPlayers(GameEventType.DREW_FROM_DEAD_WALL, player);
+        fireEventAllPlayersExcept(GameEventType.DREW_FROM_DEAD_WALL, player);
         fireEvent(player, GameEventType.DREW_FROM_DEAD_WALL, tile);
         fireEvent(player, GameEventType.TURN_STARTED, this.game.getGameState());
     }
@@ -496,7 +505,7 @@ public class GameManager implements GameEventListener {
         Tile tile = this.game.getWall().draw();
         player.deal(tile);
         this.game.setGameState(GameState.WAITING);
-        fireEventAllPlayers(GameEventType.DREW_FROM_LIVE_WALL, player);
+        fireEventAllPlayersExcept(GameEventType.DREW_FROM_LIVE_WALL, player);
         fireEvent(player, GameEventType.DREW_FROM_LIVE_WALL, tile);
         fireEvent(player, GameEventType.TURN_STARTED, this.game.getGameState());
     }
@@ -525,6 +534,15 @@ public class GameManager implements GameEventListener {
     private void fireEventAllPlayers(GameEventType eventType, Object eventData) {
         for (AbstractPlayerController player : this.players) {
             fireEvent(player, eventType, eventData);
+        }
+    }
+
+    private void fireEventAllPlayersExcept(GameEventType eventType,
+            Player eventData) {
+        for (AbstractPlayerController player : this.players) {
+            if (player.getPlayer() != eventData) {
+                fireEvent(player, eventType, eventData);
+            }
         }
     }
 
@@ -588,7 +606,8 @@ public class GameManager implements GameEventListener {
      *            the discard event
      */
     private boolean hasCallers(GameEvent event) {
-        if (event.getEventType() != GameEventType.DISCARD) {
+        GameEventType eventType = event.getEventType();
+        if (!eventType.isDiscard()) {
             return false;
         }
 
@@ -768,21 +787,29 @@ public class GameManager implements GameEventListener {
     }
 
     private void setUpNewRound() {
-        Wall wall = this.game.getWall();
-        wall.reset();
+        this.game.getWall().reset();
         this.game.resetFourWindsAbort();
         this.game.setDeadDraw(false);
         this.called.clear();
         this.canCall.clear();
 
+        for (AbstractPlayerController p : this.players) {
+            this.waitingForOk.clear();
+            this.waitingForOk.add(p.getPlayer());
+        }
         fireEventAllPlayers(GameEventType.ROUND_STARTED);
+    }
+
+    private void dealHaipai() {
         /* Deal haipai */
         for (AbstractPlayerController apc : this.players) {
             Player player = apc.getPlayer();
             player.nextRound();
-            Tile[] tiles = wall.haipai();
+            Tile[] tiles = this.game.getWall().haipai();
             player.deal(tiles);
             for (Tile tile : tiles) {
+                fireEventAllPlayersExcept(GameEventType.DREW_FROM_LIVE_WALL,
+                        player);
                 fireEvent(apc, GameEventType.DREW_FROM_LIVE_WALL, tile);
             }
         }

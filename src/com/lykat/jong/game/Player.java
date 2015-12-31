@@ -117,6 +117,7 @@ public class Player {
      * number of tiles dealt must be equal to 13.
      */
     protected void deal(Tile[] tiles) {
+        // TODO: Remove, force use of deal(Tile) instead.
         if (this.hand.size() > 0) {
             throw new IllegalStateException("Cannot deal a hand to a player "
                     + "that already has more than 0 tiles in their hand. ");

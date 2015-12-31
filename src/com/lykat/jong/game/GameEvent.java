@@ -37,6 +37,14 @@ public class GameEvent extends EventObject {
 
         public boolean isAbort() {
             switch (this) {
+            case ABORT_4_KAN:
+            case ABORT_4_WINDS:
+            case ABORT_5_KAN:
+            case ABORT_ALL_RIICHI:
+            case ABORT_CHOMBO:
+            case ABORT_KYUUSHU_KYUUHAI:
+            case ABORT_RON:
+                return true;
             default:
                 return false;
             }
@@ -55,6 +63,13 @@ public class GameEvent extends EventObject {
             default:
                 return false;
             }
+        }
+
+        /**
+         * Returns true if this is either a DISCARD or TSUMOKIRI event.
+         */
+        public boolean isDiscard() {
+            return (this == DISCARD || this == TSUMOKIRI);
         }
 
         /**
