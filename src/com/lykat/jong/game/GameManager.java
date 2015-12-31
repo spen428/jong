@@ -160,7 +160,8 @@ public class GameManager implements GameEventListener {
             }
         } else if (gameState == GameState.WAITING) {
             if (isTurn) {
-                if (eventType == GameEventType.DISCARD) {
+                if (eventType == GameEventType.DISCARD
+                        || eventType == GameEventType.TSUMOKIRI) {
                     discard(event);
                 } else if (eventType == GameEventType.DECLARE_RIICHI) {
                     declareRiichi(event);
@@ -362,9 +363,14 @@ public class GameManager implements GameEventListener {
      */
     private void discard(GameEvent event) {
         Player player = event.getSource();
-        int index = (int) event.getEventData();
         try {
-            Tile tile = player.discard(index);
+            Tile tile;
+            if (event.getEventType() == GameEventType.TSUMOKIRI) {
+                tile = player.tsumoKiri();
+            } else {
+                int index = ((Integer) event.getEventData()).intValue();
+                tile = player.discard(index);
+            }
             this.game.setDeadDraw(false);
             LOGGER.log(Level.FINER, String.format("Player %s"
                     + " discarded tile %s", player.getName(), tile.toString()));
