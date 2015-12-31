@@ -11,36 +11,36 @@ import com.lykat.jong.game.Tile;
  */
 public class DummyPlayer extends Player {
 
-	public DummyPlayer(String name) {
-		super(name);
-	}
+    public DummyPlayer(String name) {
+        super(name);
+    }
 
-	public void deal(Tile tile) {
-		super.deal(tile);
-	}
+    public void deal(Tile tile) {
+        super.deal(tile);
+    }
 
-	public void deal(Tile[] tiles) {
-		super.deal(tiles);
-	}
+    public void deal(Tile[] tiles) {
+        super.deal(tiles);
+    }
 
-	public void addToDiscardPond(Tile tile) {
-		super.addToDiscardPond(tile);
-	}
+    public void addToDiscardPond(Tile tile) {
+        super.addToDiscardPond(tile);
+    }
 
-	public void tsumoKiri() {
-		super.tsumoKiri();
-	}
+    public Tile tsumoKiri() {
+        return super.tsumoKiri();
+    }
 
-	public void addPoints(int points) {
-		super.addPoints(points);
-	}
+    public void addPoints(int points) {
+        super.addPoints(points);
+    }
 
-	public void removePoints(int points) {
-		super.removePoints(points);
-	}
+    public void removePoints(int points) {
+        super.removePoints(points);
+    }
 
-	public boolean declareRiichi() {
-		return super.declareRiichi();
-	}
+    public boolean declareRiichi() {
+        return super.declareRiichi();
+    }
 
 }

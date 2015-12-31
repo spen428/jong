@@ -88,9 +88,11 @@ public class Player {
 
     /**
      * Discard the player's 'tsumoHai'
+     * 
+     * @return the Tile that was discarded
      */
-    protected void tsumoKiri() {
-        discard(-1);
+    protected Tile tsumoKiri() {
+        return discard(-1);
     }
 
     /**
