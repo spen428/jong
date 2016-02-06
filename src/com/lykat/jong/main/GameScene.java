@@ -46,6 +46,7 @@ import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
@@ -65,6 +66,7 @@ import com.lykat.jong.game.Meld;
 import com.lykat.jong.game.Player;
 import com.lykat.jong.game.Tile;
 import com.lykat.jong.game.Wall;
+import com.lykat.jong.util.TextureLoader;
 
 /**
  * Renders the table and tiles based on an instance of {@link Game}.
@@ -133,6 +135,9 @@ public class GameScene implements ApplicationListener, Observer {
         }
         if (found) {
             tileInstance.materials.get(idx).set(textureAttr);
+            /* To support transparency in textures */
+            tileInstance.materials.get(idx).set(new BlendingAttribute(
+                    GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA));
             return true;
         }
         return false;
@@ -166,6 +171,7 @@ public class GameScene implements ApplicationListener, Observer {
     protected final Vector3 PLAYER_CAM_POS = new Vector3(0,
             PLAYER_CAMERA_Y_OFFSET_MM, PLAYER_CAMERA_Z_OFFSET_MM);
     protected ModelInstance[][] playerDiscards, playerHands, playerMelds;
+    // TODO: Only hand of current player should be rendered.
     protected ModelInstance[] playerTsumohai;
     protected final Vector3 RIGHT = new Vector3(1, 0, 0);
 
@@ -181,8 +187,6 @@ public class GameScene implements ApplicationListener, Observer {
     protected final Vector3 UP = new Vector3(0, 0, 1);
 
     private int visibleDora;
-    private final Material selectedMaterial = new Material(
-            ColorAttribute.createDiffuse(new Color(255, 255, 255, 100)));
 
     @Override
     public void create() {
@@ -311,8 +315,7 @@ public class GameScene implements ApplicationListener, Observer {
         {
             ModelBuilder mb = new ModelBuilder();
             Model playingSurface = mb.createBox(PLAYING_SURFACE_RADIUS_MM * 2,
-                    PLAYING_SURFACE_RADIUS_MM * 2,
-                    PLAYING_SURFACE_THICKNESS_MM,
+                    PLAYING_SURFACE_RADIUS_MM * 2, PLAYING_SURFACE_THICKNESS_MM,
                     new Material(ColorAttribute.createDiffuse(Color.NAVY)),
                     Usage.Position | Usage.Normal);
             ModelInstance instance = new ModelInstance(playingSurface);
@@ -346,9 +349,8 @@ public class GameScene implements ApplicationListener, Observer {
                     float xPos = ((x + 1) * tileWG) - halfWidth;
                     float yPos = -WALL_TILES_Y_OFFSET_MM;
                     float zPos = z * tileTG;
-                    instance.transform.setToWorld(
-                            new Vector3(xPos, yPos, zPos), this.FORWARD,
-                            this.UP);
+                    instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
+                            this.FORWARD, this.UP);
 
                     /* Rotate into place */
                     rotateAboutCenter(instance.transform, p * 90);
@@ -400,8 +402,8 @@ public class GameScene implements ApplicationListener, Observer {
 
                     Tile tile = player.getHand().get(x);
                     if (this.playerHands[p][x] != null
-                            && this.playerHands[p][x].userData.equals(tile
-                                    .toString())) {
+                            && this.playerHands[p][x].userData
+                                    .equals(tile.toString())) {
                         continue;
                     }
 
@@ -414,14 +416,15 @@ public class GameScene implements ApplicationListener, Observer {
                     float xPos = x * (tileWG) - halfWidth;
                     float yPos = -HAND_TILES_Y_OFFSET_MM;
                     float zPos = 0;
-                    instance.transform.setToWorld(
-                            new Vector3(xPos, yPos, zPos), this.FORWARD,
-                            this.UP);
+                    instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
+                            this.FORWARD, this.UP);
 
-                    /* Rotate so it ends up in front of #p, then rotate to face */
+                    /*
+                     * Rotate so it ends up in front of #p, then rotate to face
+                     */
                     rotateAboutCenter(instance.transform, p * 90);
-                    instance.transform.rotate(0, -1, 0, 90)
-                            .rotate(-1, 0, 0, 90);
+                    instance.transform.rotate(0, -1, 0, 90).rotate(-1, 0, 0,
+                            90);
                 }
             }
 
@@ -430,8 +433,8 @@ public class GameScene implements ApplicationListener, Observer {
                 Tile tsumohai = player.getTsumoHai();
                 if (tsumohai != null) {
                     if (this.playerTsumohai[p] != null
-                            && this.playerTsumohai[p].userData.equals(tsumohai
-                                    .toString())) {
+                            && this.playerTsumohai[p].userData
+                                    .equals(tsumohai.toString())) {
                         continue;
                     }
 
@@ -448,14 +451,13 @@ public class GameScene implements ApplicationListener, Observer {
                         zPos += tileHG;
                     }
 
-                    instance.transform.setToWorld(
-                            new Vector3(xPos, yPos, zPos), this.FORWARD,
-                            this.UP);
+                    instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
+                            this.FORWARD, this.UP);
 
                     /* Rotate into place */
                     rotateAboutCenter(instance.transform, p * 90);
-                    instance.transform.rotate(0, -1, 0, 90)
-                            .rotate(-1, 0, 0, 90);
+                    instance.transform.rotate(0, -1, 0, 90).rotate(-1, 0, 0,
+                            90);
                     if (placeOntop) {
                         instance.transform.rotate(0, 0, -1, 90);
                     }
@@ -485,13 +487,14 @@ public class GameScene implements ApplicationListener, Observer {
                         float xPos = OPEN_MELDS_X_OFFSET_MM - (x * tileWG);
                         float yPos = -OPEN_MELDS_Y_OFFSET_MM + (y * tileHG);
                         float zPos = TILE_THICKNESS_MM;
-                        instance.transform.setToWorld(new Vector3(xPos, yPos,
-                                zPos), this.FORWARD, this.UP);
+                        instance.transform.setToWorld(
+                                new Vector3(xPos, yPos, zPos), this.FORWARD,
+                                this.UP);
 
                         /* Rotate into place */
                         rotateAboutCenter(instance.transform, p * 90);
-                        instance.transform.rotate(1, 0, 0, 180).rotate(0, 0,
-                                -1, 90);
+                        instance.transform.rotate(1, 0, 0, 180).rotate(0, 0, -1,
+                                90);
 
                         this.instances.add(instance);
                         setTileFace(instance,
@@ -512,9 +515,8 @@ public class GameScene implements ApplicationListener, Observer {
                     float xPos = 0;
                     float yPos = -RIICHI_STICK_Y_OFFSET_MM;
                     float zPos = RIICHI_HEIGHT_MM;
-                    instance.transform.setToWorld(
-                            new Vector3(xPos, yPos, zPos), this.FORWARD,
-                            this.UP);
+                    instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
+                            this.FORWARD, this.UP);
 
                     /* Rotate into place */
                     rotateAboutCenter(instance.transform, p * 90);
@@ -538,8 +540,8 @@ public class GameScene implements ApplicationListener, Observer {
 
                     Tile tile = player.getDiscards().get(i);
                     if (this.playerDiscards[p][i] != null
-                            && this.playerDiscards[p][i].userData.equals(tile
-                                    .toString())) {
+                            && this.playerDiscards[p][i].userData
+                                    .equals(tile.toString())) {
                         /* Tile has already been rendered */
                         LOGGER.finer("Tile " + tile.toString() + " skipped: "
                                 + "Tile has already been rendered.");
@@ -559,14 +561,13 @@ public class GameScene implements ApplicationListener, Observer {
                     float xPos = (x * tileWG) - halfWidth;
                     float yPos = -DISCARD_TILES_Y_OFFSET_MM - (y * tileHG);
                     float zPos = TILE_THICKNESS_MM;
-                    instance.transform.setToWorld(
-                            new Vector3(xPos, yPos, zPos), this.FORWARD,
-                            this.UP);
+                    instance.transform.setToWorld(new Vector3(xPos, yPos, zPos),
+                            this.FORWARD, this.UP);
 
                     /* Rotate into place */
                     rotateAboutCenter(instance.transform, p * 90);
-                    instance.transform.rotate(1, 0, 0, 180)
-                            .rotate(0, 0, -1, 90);
+                    instance.transform.rotate(1, 0, 0, 180).rotate(0, 0, -1,
+                            90);
                     instance.userData = tile.toString();
                     setTileFace(instance, TextureLoader.getTileTexture(tile));
                     this.playerDiscards[p][i] = instance;
@@ -589,8 +590,8 @@ public class GameScene implements ApplicationListener, Observer {
         while (this.visibleDora < this.flippedDora) {
             ModelInstance doraHyouji = this.deadWallTiles
                     .get(5 + 2 * (this.visibleDora));
-            setTileFace(doraHyouji, TextureLoader.getTileTexture(this.game
-                    .getWall().getDoraIndicators()[this.visibleDora]));
+            setTileFace(doraHyouji, TextureLoader.getTileTexture(
+                    this.game.getWall().getDoraIndicators()[this.visibleDora]));
             flip(doraHyouji);
             this.visibleDora++;
         }
