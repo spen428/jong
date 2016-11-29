@@ -3,6 +3,24 @@ Jong
 
 A (real) Mahjong game written in Java.
 
+Features
+--------
+
+So far the game is able to render a 3D scene representing the current game
+state. This is seen when running the `GameSceneTest` class:
+
+![GameSceneTest Player View](doc/gamescenetest1.png)
+
+![GameSceneTest Top View](doc/gamescenetest2.png)
+
+The `GameplayTest` class tests the runthrough of a game, allowing the player
+to draw, discard, and call tiles. This is still in development and has known
+bugs, including cases of the game reaching an illegal state, and (as can be
+observed in the screenshot below) too many of each tile being pulled from the
+wall.
+
+![GameplayTest Call](doc/gameplaytest1.png)
+
 Dependencies
 ------------
 - JDK 1.7+
