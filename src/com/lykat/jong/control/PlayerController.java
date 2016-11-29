@@ -21,7 +21,7 @@ public class PlayerController extends AbstractPlayerController {
 
     @Override
     public void handleEvent(GameEvent event) {
-        super.setChanged();
+        setChanged();
 
         /* Echoed event */
         if (event.getSource() == this.getPlayer()) {
@@ -34,9 +34,9 @@ public class PlayerController extends AbstractPlayerController {
                 GameState state = (GameState) data;
                 if (type == GameEventType.TURN_STARTED) {
                     if (state == GameState.MUST_DRAW_LIVE) {
-                        super.fireEvent(GameEventType.DRAW_FROM_LIVE_WALL);
+                        fireEvent(GameEventType.DRAW_FROM_LIVE_WALL);
                     } else if (state == GameState.MUST_DRAW_DEAD) {
-                        super.fireEvent(GameEventType.DRAW_FROM_DEAD_WALL);
+                        fireEvent(GameEventType.DRAW_FROM_DEAD_WALL);
                     } else if (state == GameState.MUST_DISCARD) {
                         LOGGER.log(Level.INFO, "You must now discard a tile.");
                     } else if (state == GameState.WAITING) {
@@ -62,7 +62,7 @@ public class PlayerController extends AbstractPlayerController {
             }
         }
 
-        super.notifyObservers(event);
+        notifyObservers(event);
     }
 
     private void handleConfirmation(GameEvent event) {
@@ -97,55 +97,55 @@ public class PlayerController extends AbstractPlayerController {
         LOGGER.log(Level.FINEST, "keyDown event: " + keycode);
         switch (keycode) {
         case Keys.F:
-            super.discard(-1);
+            discard(-1);
             break;
         case Keys.D:
-            super.skipCall();
+            skipCall();
             break;
         case Keys.S:
-            super.fireEvent(GameEventType.CALL_PON);
+            fireEvent(GameEventType.CALL_PON);
             break;
         case Keys.O:
-            super.fireEvent(GameEventType.OK);
+            fireEvent(GameEventType.OK);
             break;
         case Keys.NUM_1:
-            super.discard(0);
+            discard(0);
             break;
         case Keys.NUM_2:
-            super.discard(1);
+            discard(1);
             break;
         case Keys.NUM_3:
-            super.discard(2);
+            discard(2);
             break;
         case Keys.NUM_4:
-            super.discard(3);
+            discard(3);
             break;
         case Keys.NUM_5:
-            super.discard(4);
+            discard(4);
             break;
         case Keys.NUM_6:
-            super.discard(5);
+            discard(5);
             break;
         case Keys.NUM_7:
-            super.discard(6);
+            discard(6);
             break;
         case Keys.NUM_8:
-            super.discard(7);
+            discard(7);
             break;
         case Keys.NUM_9:
-            super.discard(8);
+            discard(8);
             break;
         case Keys.NUM_0:
-            super.discard(9);
+            discard(9);
             break;
         case Keys.MINUS:
-            super.discard(10);
+            discard(10);
             break;
         case Keys.EQUALS:
-            super.discard(11);
+            discard(11);
             break;
         case Keys.BACKSPACE:
-            super.discard(12);
+            discard(12);
             break;
         default:
             break;

@@ -18,7 +18,7 @@ public class TsumokiriAI extends AbstractPlayerController {
 
     @Override
     public void handleEvent(GameEvent event) {
-        super.setChanged();
+        setChanged();
 
         /* Echoed event */
         if (event.getSource() == this.getPlayer()) {
@@ -31,10 +31,10 @@ public class TsumokiriAI extends AbstractPlayerController {
                 GameState state = (GameState) data;
                 if (type == GameEventType.TURN_STARTED) {
                     if (state == GameState.MUST_DRAW_LIVE) {
-                        super.fireEvent(GameEventType.DRAW_FROM_LIVE_WALL);
+                        fireEvent(GameEventType.DRAW_FROM_LIVE_WALL);
                         sleep();
                     } else if (state == GameState.MUST_DRAW_DEAD) {
-                        super.fireEvent(GameEventType.DRAW_FROM_DEAD_WALL);
+                        fireEvent(GameEventType.DRAW_FROM_DEAD_WALL);
                         sleep();
                     }
                 } else if (type == GameEventType.TURN_FINISHED) {
@@ -43,12 +43,12 @@ public class TsumokiriAI extends AbstractPlayerController {
             } else if (data instanceof Call) {
                 /* Available meld call */
                 // Call call = (Call) data;
-                super.skipCall();
+                skipCall();
             }
-            super.tsumoKiri();
+            tsumoKiri();
         }
 
-        super.notifyObservers(event);
+        notifyObservers(event);
     }
 
     private static void sleep() {
