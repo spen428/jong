@@ -39,18 +39,13 @@ public class GameplayTest extends GameScene {
             ai.connect();
         }
 
-        super.setGame(this.game);
+        setGame(this.game);
     }
 
     @Override
     public void create() {
         super.create();
         Gdx.input.setInputProcessor(this.playerController);
-    }
-
-    @Override
-    public void render() {
-        super.render();
     }
 
     public static void main(String[] args) {

@@ -67,13 +67,13 @@ public class GameSceneTest extends GameScene implements InputProcessor {
             p.deal(w.draw());
         }
 
-        super.setGame(game);
+        setGame(game);
     }
 
     @Override
     public void create() {
         super.create();
-        this.camCont = new CameraInputController(super.cam);
+        this.camCont = new CameraInputController(cam);
         Gdx.input.setInputProcessor(this);
     }
 
@@ -134,8 +134,8 @@ public class GameSceneTest extends GameScene implements InputProcessor {
 
     private void resetCamera() {
         this.overheadView = false;
-        this.cam.position.set(super.PLAYER_CAM_POS);
-        this.cam.up.set(super.UP);
+        this.cam.position.set(PLAYER_CAM_POS);
+        this.cam.up.set(UP);
         this.cam.lookAt(0, 0, 0);
         this.cam.update();
     }

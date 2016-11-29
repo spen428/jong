@@ -120,11 +120,6 @@ public class GameEvent extends EventObject {
     }
 
     @Override
-    public String toString() {
-        return super.toString();
-    }
-
-    @Override
     public Player getSource() {
         return (Player) this.source;
     }
