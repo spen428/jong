@@ -1,12 +1,14 @@
 package com.lykat.jong.game;
 
+import java.util.Comparator;
+
 /**
  * Represents a Mahjong tile with a suit and value.
  * 
  * @author lykat
  *
  */
-public class Tile {
+public class Tile implements Comparable<Tile>, Comparator<Tile> {
 
 	private final TileSuit suit;
 	private final TileValue value;
@@ -123,6 +125,28 @@ public class Tile {
 
 	public boolean isDragon() {
 		return this.value.isDragon();
+	}
+
+	@Override
+	public int compareTo(Tile t) {
+		return compare(this, t);
+	}
+
+	@Override
+	public int compare(Tile t0, Tile t1) {
+		if (t0 == t1) {
+			return 0;
+		} else if (t0 == null) {
+			return 1;
+		} else if (t1 == null) {
+			return -1;
+		}
+
+		int c = t0.getSuit().compareTo(t1.getSuit());
+		if (c == 0) {
+			return t0.getValue().compareTo(t1.getValue());
+		}
+		return c;
 	}
 
 }

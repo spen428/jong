@@ -1,9 +1,9 @@
 package com.lykat.jong.game;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import com.lykat.jong.game.Meld.MeldType;
-import com.lykat.jong.util.Sorter;
 
 /**
  * Represents a player in a {@link Game}.
@@ -170,7 +170,7 @@ public class Player {
      * Sorts the players hand.
      */
     void sortHand() {
-        Sorter.sort(this.hand);
+        Collections.sort(this.hand);
     }
 
     public Tile getTsumoHai() {

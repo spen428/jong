@@ -1,6 +1,6 @@
 package com.lykat.jong.game;
 
-import com.lykat.jong.util.Sorter;
+import java.util.Arrays;
 
 public class Meld {
 
@@ -80,7 +80,7 @@ public class Meld {
         this.callTile = callTile;
         this.type = type;
         this.meldSource = meldSource;
-        Sorter.sort(tiles);
+        Arrays.sort(tiles);
     }
 
     public Meld(Tile[] tiles, MeldType type) {
