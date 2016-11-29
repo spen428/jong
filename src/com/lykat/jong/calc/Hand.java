@@ -3,9 +3,9 @@ package com.lykat.jong.calc;
 import java.util.ArrayList;
 
 import com.lykat.jong.game.Meld;
-import com.lykat.jong.game.Tile;
 import com.lykat.jong.game.Meld.MeldSource;
 import com.lykat.jong.game.Meld.MeldType;
+import com.lykat.jong.game.Tile;
 
 public class Hand {
 
