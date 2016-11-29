@@ -571,8 +571,8 @@ public class GameScene implements ApplicationListener, Observer {
             this.spriteBatch.setProjectionMatrix(this.cam.combined);
             this.spriteBatch.begin();
             this.font.setColor(Color.WHITE);
-            this.font.draw(this.spriteBatch, "Tiles Remaining: "
-                    + this.game.getWall().getNumRemainingDraws(), 0, 0);
+            //this.font.draw(this.spriteBatch, "Tiles Remaining: "
+            //       + this.game.getWall().getNumRemainingDraws(), 0, 0);
             this.spriteBatch.end();
 
         }
